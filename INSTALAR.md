@@ -56,3 +56,5 @@ Na aba **Skills**, crie suas habilidades. Vincule-as ao turno ou a jornadas do h
 Em **Ajustes → Temas**, escolha Pip-Boy, Medieval ou Cyberpunk. A escolha fica salva automaticamente.
 
 O Histórico mostra se a jornada está no rascunho, em um invoice emitido ou paga. Remover a linha do rascunho ou cancelar o invoice remove seu vínculo. No invoice emitido, use **Marcar como pago**; suas jornadas também receberão a marca de pagamento. **Marcar como não pago** desfaz essa ação. O resumo mostra quanto foi pago e quanto falta receber.
+
+O idioma inicial é inglês. Em **Settings → App language**, selecione **Português** se preferir. O PDF do invoice continua sempre em inglês.

@@ -8,6 +8,7 @@
     client:'Nome do cliente',client_address:'Endereço do cliente',client_abn:'ABN do cliente',client_email:'E-mail do cliente',description:'Descrição dos serviços (em inglês)'
   };
   function text(tag,value,cls){const e=document.createElement(tag);e.textContent=value;if(cls)e.className=cls;return e;}
+  function userText(e){e.dataset.userText='';return e;}
   function error(message){$('invoiceError').textContent=message||'';}
   window.invoiceError=error;
   function cmd(action,payload){if(!native){error('Prévia visual. Instale o APK para gerar, guardar e enviar PDFs.');return;}Android.command(action,JSON.stringify(payload||{}));}
@@ -22,7 +23,7 @@
     const cents=(numerator*2n+denominator)/(denominator*2n);
     return {actual:Number(h.n)/Number(h.d),quarters:Number(quarters),cents:Number(cents),dayOff};
   }
-  const cash=cents=>'$ '+(cents/100).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const cash=cents=>'$ '+(cents/100).toLocaleString(window.I18n.locale(),{minimumFractionDigits:2,maximumFractionDigits:2});
   function input(label,name,value,parent,kind='text'){
     const wrap=text('label',label),el=document.createElement(kind==='textarea'?'textarea':'input');
     if(kind!=='textarea')el.type=kind;el.name=name;el.value=value||'';el.maxLength=name.includes('address')?350:name==='description'?500:name.includes('email')?160:name.includes('abn')||name==='bsb'?40:name==='account'?80:120;
@@ -37,7 +38,7 @@
   function updateTotals(){
     const draft=readDraft();let actual=0,quarters=0,cents=0,invalid=false;
     draft.rows.forEach((r,i)=>{const target=$('invoiceRows').children[i].querySelector('.line-total');try{const l=line(r,draft.rate);actual+=l.actual;quarters+=l.quarters;cents+=l.cents;target.textContent=l.dayOff?'Day off · '+cash(0):l.quarters/4+' h cobradas · '+cash(l.cents);}catch(e){target.textContent=e.message;invalid=true;}});
-    $('invoiceActual').textContent=actual.toLocaleString('pt-BR',{maximumFractionDigits:4})+' h';$('invoiceBilled').textContent=(quarters/4).toLocaleString('pt-BR',{maximumFractionDigits:2})+' h';$('invoiceTotal').textContent=invalid?'Confira as linhas':cash(cents);
+    $('invoiceActual').textContent=actual.toLocaleString(window.I18n.locale(),{maximumFractionDigits:4})+' h';$('invoiceBilled').textContent=(quarters/4).toLocaleString(window.I18n.locale(),{maximumFractionDigits:2})+' h';$('invoiceTotal').textContent=invalid?'Confira as linhas':cash(cents);
   }
   function save(){clearTimeout(saveTimer);if(native&&initialized)cmd('saveInvoiceDraft',readDraft());}
   function changed(){editing=true;updateTotals();clearTimeout(saveTimer);saveTimer=setTimeout(save,500);}
@@ -50,7 +51,7 @@
     box.append(text('p','','line-total'));$('invoiceRows').append(box);if(persist)changed();
   }
   function populate(draft){
-    $('invoiceNumber').value=draft.number||state.nextInvoiceNumber||18;$('invoiceRate').value=String(draft.rate||'32').replace('.',',');
+    $('invoiceNumber').value=draft.number||state.nextInvoiceNumber||18;$('invoiceRate').value=(window.I18n.language()==='pt'?String(draft.rate||'32').replace('.',','):String(draft.rate||'32'));
     for(const key of Object.keys(fields))document.querySelector(`[name="${key}"]`).value=draft.profile&&draft.profile[key]||'';
     $('invoiceRows').replaceChildren();for(const r of draft.rows||[])addRow(r,false);
     initialized=true;editing=false;updateTotals();
@@ -73,7 +74,7 @@
     for(const [target,items] of [[$('invoiceRecords'),active],[$('invoiceTrashList'),removed]]){
       target.replaceChildren();if(!items.length)target.append(text('p','Nenhum invoice neste grupo.','empty'));
       for(const r of items){
-        const cancelled=r.status==='cancelled',card=text('article','','panel history-card');card.append(text('h3','INVOICE #'+String(r.number).padStart(3,'0')),text('p',r.client,'muted'),text('p',cash(Math.round(Number(r.total)*100)),'history-net'),text('p','Emissão: '+r.issued+' · AUD','muted'));
+        const cancelled=r.status==='cancelled',card=text('article','','panel history-card');card.append(text('h3','INVOICE #'+String(r.number).padStart(3,'0')),userText(text('p',r.client,'muted')),text('p',cash(Math.round(Number(r.total)*100)),'history-net'),text('p','Emissão: '+r.issued+' · AUD','muted'));
         if(!cancelled)card.append(text('p',r.paid?'✓ PAGO':'◷ AGUARDANDO PAGAMENTO','billing-badge '+(r.paid?'paid':'unpaid')));
         if(cancelled)card.append(text('p','CANCELADO · não entra no total. O PDF original e o número ficam preservados.','help'));
         if(r.needsReview)card.append(text('p','REVISÃO NECESSÁRIA: uma jornada vinculada mudou. Crie uma correção antes de enviar.','notice'));

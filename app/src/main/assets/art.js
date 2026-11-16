@@ -7,7 +7,7 @@
   function path(points,color=green,width=2){c.strokeStyle=color;c.lineWidth=width;c.lineJoin='round';c.lineCap='round';c.beginPath();points.forEach((p,i)=>i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]));c.stroke();}
   function shape(draw,fill=bg,stroke=green,width=2){c.beginPath();draw();c.fillStyle=fill;c.fill();c.strokeStyle=stroke;c.lineWidth=width;c.lineJoin='round';c.stroke();}
   function rect(x,y,w,h,color){c.fillStyle=color;c.fillRect(x,y,w,h);}
-  function label(text,x,y,color=green,size=8){c.fillStyle=color;c.font=`${size}px monospace`;c.fillText(text,x,y);}
+  function label(text,x,y,color=green,size=8){c.fillStyle=color;c.font=`${size}px monospace`;c.fillText(window.I18n.t(text),x,y);}
   function worker(swing,working){
     shape(()=>{c.moveTo(173,107);c.lineTo(189,107);c.lineTo(187,145);c.quadraticCurveTo(183,152,167,150);c.lineTo(165,146);c.lineTo(173,139);c.closePath();},'#193b17');
     shape(()=>{c.moveTo(191,108);c.lineTo(206,107);c.lineTo(209,139);c.quadraticCurveTo(222,142,219,150);c.lineTo(200,151);c.lineTo(196,143);c.closePath();},'#193b17');
@@ -108,6 +108,6 @@
     m.strokeRect(313,10,20,28);m.strokeRect(318,5,10,5);for(let x=318;x<330;x+=6)for(let y=15;y<30;y+=7)m.strokeRect(x,y,3,3);
     m.fillStyle=green;m.beginPath();m.moveTo(182,28);m.lineTo(190,36);m.lineTo(182,44);m.lineTo(174,36);m.closePath();m.fill();m.fillStyle=bg;m.fillRect(180,34,4,4);
   }
-  render(0);renderMap();let last=0,lastPhase='';window.addEventListener('themechange',()=>{render(last/1000);renderMap();});
+  render(0);renderMap();let last=0,lastPhase='';window.addEventListener('themechange',()=>{render(last/1000);renderMap();});window.addEventListener('languagechange',()=>{render(last/1000);renderMap();});
   function animate(t){const phase=document.documentElement.dataset.phase||'idle';if(t-last>120&&!document.hidden&&!document.getElementById('today').classList.contains('hidden')&&(phase!==lastPhase||phase==='work'&&!reduced)){render(t/1000);last=t;lastPhase=phase;}requestAnimationFrame(animate);}requestAnimationFrame(animate);
 })();

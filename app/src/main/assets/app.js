@@ -18,7 +18,7 @@
     if(!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(text)) return NaN;
     return Number(text);
   }
-  function money(n) {return (n<0?'− ':'')+'$ '+Math.abs(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
+  function money(n) {return (n<0?'− ':'')+'$ '+Math.abs(n).toLocaleString(window.I18n.locale(),{minimumFractionDigits:2,maximumFractionDigits:2});}
   function time(ms) {const sec=Math.floor(Math.max(0,ms)/1000);return [Math.floor(sec/3600),Math.floor(sec/60)%60,sec%60].map(n=>String(n).padStart(2,'0')).join(':');}
   function safeText(tag,text,cls) {const el=document.createElement(tag);el.textContent=text;if(cls)el.className=cls;return el;}
   function switchPage(page) {
@@ -63,15 +63,15 @@
   }
   function fillSettings() {
     const form=$('settingsForm');
-    for(const [key,value]of Object.entries(state.config)){if(form.elements.namedItem(key))form.elements.namedItem(key).value=String(value).replace('.',',');}
+    for(const [key,value]of Object.entries(state.config)){if(form.elements.namedItem(key))form.elements.namedItem(key).value=(window.I18n.language()==='pt'?String(value).replace('.',','):String(value));}
   }
   function refresh() {
-    state=read();window.ThemeUI.render(state.theme);
+    state=read();window.I18n.render(state.language);window.ThemeUI.render(state.theme);
     const s=state.session,t=state.totals,cfg=s.config||state.config,phase=s.phase||'idle';
     document.documentElement.dataset.phase=phase;
     const names={idle:'PRONTO',commute:'EM TRAJETO',work:'TRABALHANDO',pause:'EM PAUSA',return:'VOLTANDO'};
     $('status').textContent=native?names[phase]:'PRÉVIA';$('status').classList.toggle('live',phase==='work'||phase==='commute'||phase==='return');
-    $('todayDate').textContent=new Date(state.now).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+    $('todayDate').textContent=new Date(state.now).toLocaleDateString(window.I18n.locale(),{day:'2-digit',month:'2-digit'});
     $('net').textContent=money(t.net);$('net').classList.toggle('negative',t.net<0);
     $('currencyBadge').textContent=cfg.currency;$('timer').textContent=time(t.workedMs);$('hourly').textContent=money(cfg.hourly);
     const notes={idle:'Comece pelo trajeto ou inicie direto no trabalho.',commute:'Registrando ida. Toque em “Cheguei” quando começar a trabalhar.',work:'Jornada ativa. Seu ganho acompanha o tempo, mesmo com a tela apagada.',pause:'Pausa ativa. O tempo pago está parado.',return:'Trabalho finalizado. Registrando o custo da volta.'};
@@ -84,7 +84,7 @@
     summary.replaceChildren(safeText('span','ACUMULADO HOJE','tiny'),...Object.entries(daily).map(([currency,value])=>safeText('strong',currency+' '+money(value))),safeText('small','Por dia de trabalho · inclui jornada atual'));
     $('recovery').classList.toggle('hidden',phase==='idle'||state.serviceRunning);
     renderRows(t,cfg);renderActions(phase);
-    $('distance').replaceChildren(document.createTextNode((s.km||0).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+' '),safeText('small','km'));
+    $('distance').replaceChildren(document.createTextNode((s.km||0).toLocaleString(window.I18n.locale(),{minimumFractionDigits:1,maximumFractionDigits:1})+' '),safeText('small','km'));
     const travelling=phase==='commute'||phase==='return';
     const fresh=s.lastFix&&state.now-s.lastFix<30000;
     $('gpsBadge').textContent=travelling?(fresh?'GPS ATIVO':'BUSCANDO GPS'):'GPS EM ESPERA';

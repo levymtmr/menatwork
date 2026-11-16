@@ -35,7 +35,7 @@ public class ShiftService extends Service implements LocationListener {
         super.onCreate();
         store = new Store(this);
         gps = (LocationManager)getSystemService(LOCATION_SERVICE);
-        NotificationChannel channel = new NotificationChannel(CHANNEL, "Jornada e trajeto", NotificationManager.IMPORTANCE_LOW);
+        NotificationChannel channel = new NotificationChannel(CHANNEL, Language.text(this,"Jornada e trajeto"), NotificationManager.IMPORTANCE_LOW);
         channel.setDescription("Tempo, ganho líquido estimado e registro do trajeto iniciado por você.");
         ((NotificationManager)getSystemService(NOTIFICATION_SERVICE)).createNotificationChannel(channel);
     }
@@ -46,18 +46,18 @@ public class ShiftService extends Service implements LocationListener {
         String phase = s.optString("phase");
         String title = travelling(s) ? "Menatwork · registrando trajeto" : "pause".equals(phase) ? "Menatwork · pausa" : "Menatwork · trabalhando";
         long mins = t.optLong("workedMs") / 60000;
-        String text = String.format(new Locale("pt", "BR"), "%s $ %.2f líquidos · %02dh %02dmin · %.1f km", currency,
+        String text = String.format("pt".equals(store.language())?new Locale("pt", "BR"):Locale.US, "%s $ %.2f líquidos · %02dh %02dmin · %.1f km", currency,
             t.optDouble("net"), mins / 60, mins % 60, s.optDouble("km", 0));
         PendingIntent open = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
         Notification.Builder b = new Notification.Builder(this, CHANNEL)
-            .setSmallIcon(com.neonshift.app.R.drawable.ic_notification).setContentTitle(title).setContentText(text)
-            .setStyle(new Notification.BigTextStyle().bigText(text)).setContentIntent(open)
+            .setSmallIcon(com.neonshift.app.R.drawable.ic_notification).setContentTitle(Language.text(this,title)).setContentText(Language.text(this,text))
+            .setStyle(new Notification.BigTextStyle().bigText(Language.text(this,text))).setContentIntent(open)
             .setOngoing(true).setOnlyAlertOnce(true).setColor(0xff92ee73).setShowWhen(false);
         if ("work".equals(phase) || "pause".equals(phase)) {
             String action = "work".equals(phase) ? "pause" : "resume";
             PendingIntent pi = PendingIntent.getService(this, 1, new Intent(this, ShiftService.class).setAction(action),
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
-            b.addAction(new Notification.Action.Builder(null, "work".equals(phase) ? "Pausar" : "Retomar", pi).build());
+            b.addAction(new Notification.Action.Builder(null, Language.text(this,"work".equals(phase) ? "Pausar" : "Retomar"), pi).build());
         }
         return b.build();
     }

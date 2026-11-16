@@ -1,7 +1,7 @@
 'use strict';
 window.invoiceDefaults = {
   "profile": {
-    "name": "Seu nome / Your name",
+    "name": "Your name",
     "address": "",
     "email": "",
     "abn": "",
@@ -9,7 +9,7 @@ window.invoiceDefaults = {
     "bsb": "",
     "account": "",
     "account_name": "",
-    "client": "Nome do cliente / Client name",
+    "client": "Client name",
     "client_abn": "",
     "client_address": "",
     "client_email": "",

@@ -16,6 +16,8 @@ O Histórico deriva as marcações dos vínculos atuais: **Adicionada ao rascunh
 
 Em **Invoice → Marcar como pago**, o pagamento é registrado manualmente no celular. **Marcar como não pago** desfaz a marcação. As jornadas de um invoice ativo pago também ficam marcadas como pagas. O resumo separa pagos e a receber; invoices cancelados ficam fora desses valores. Invoices que precisam de revisão devem ser corrigidos antes de marcar o pagamento. Marcar pagamento não altera XP, custos ou PDFs, não movimenta dinheiro e não envia mensagens ao cliente.
 
+A interface usa inglês por padrão. **Settings → App language** permite escolher português; **Ajustes → Idioma do aplicativo** permite voltar ao inglês. A preferência é persistida independentemente do tema. Rótulos, controles, datas/números e diálogos acompanham a escolha. Conteúdos digitados pelo usuário são preservados. O modelo de PDF e a mensagem de envio permanecem sempre em inglês, independentemente do idioma da interface.
+
 Versão 1.5.0 / versionCode 6, com o mesmo pacote e certificado das instalações anteriores.
 
 ## Jornadas, invoices e habilidades (1.4.0)

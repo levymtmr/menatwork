@@ -20,6 +20,11 @@ final class Store {
     static void put(JSONObject j, String key, Object value) {
         try { j.put(key, value); } catch (Exception e) { throw new IllegalArgumentException(e); }
     }
+    String language() {return "pt".equals(prefs.getString("language","en"))?"pt":"en";}
+    void saveLanguage(String value) {
+        if(!Arrays.asList("en","pt").contains(value))throw new IllegalArgumentException("Idioma inválido.");
+        if(!prefs.edit().putString("language",value).commit())throw new IllegalStateException("Não foi possível salvar o idioma.");
+    }
     String theme() {
         String value=prefs.getString("theme","pipboy");
         return Arrays.asList("pipboy","medieval","cyberpunk").contains(value)?value:"pipboy";

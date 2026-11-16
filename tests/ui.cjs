@@ -17,10 +17,11 @@ const path = require('node:path');
   });
   await page.addInitScript(()=>{
     const cfg={currency:'AUD',hourly:32,tax:15,consumption:8,fuelPrice:1.85,tyres:.025,maintenance:.05,depreciation:.1};
-    window.testState={theme:'pipboy',session:{},config:cfg,history:[],skills:[],serviceRunning:false,now:Date.now()};
+    window.testState={language:'pt',theme:'pipboy',session:{},config:cfg,history:[],skills:[],serviceRunning:false,now:Date.now()};
     window.calls=[];
     function totals(s){const c=s.config||window.testState.config,ms=s.workedMs||0,km=s.km||0,gross=ms/3600000*c.hourly,tax=gross*c.tax/100,fuel=km*c.consumption/100*c.fuelPrice,tyres=km*c.tyres,maintenance=km*c.maintenance,depreciation=km*c.depreciation,extras=s.extras||0,carCosts=fuel+tyres+maintenance+depreciation+extras;return{gross,tax,fuel,tyres,maintenance,depreciation,extras,carCosts,net:gross-tax-carCosts,workedMs:ms};}
     window.Android={state(){if(!window.testState.invoiceDraft){window.testState.invoiceDraft={profile:{...window.invoiceDefaults.profile,name:'Example Worker',client:'Example Client',bank:'Example Bank',account_name:'Example Worker',bsb:'000-000',account:'00000000',client_email:'client@example.com'},number:18,rate:'32',rows:[]};window.testState.invoices=[];window.testState.nextInvoiceNumber=18;window.testState.invoiceToday='2026-11-16';window.testState.update={stage:'idle',message:'Ready',currentVersion:'1.2.0',progress:0};}const st=window.testState,ms=st.history.filter(r=>!r.deleted).reduce((n,r)=>n+r.workedMs,0),xp=Math.floor(ms/36000);st.progression={xp,level:Math.floor(xp/1000)+1,within:xp%1000,workedMs:ms,pendingXp:Math.floor((st.session.workedMs||0)/36000),skills:st.skills.map(skill=>{const work=skill.deleted?0:st.history.filter(r=>!r.deleted&&(r.skillIds||[]).includes(skill.id)).reduce((n,r)=>n+r.workedMs,0),x=Math.floor(work/36000);return {...skill,workedMs:work,xp:x,level:Math.floor(x/1000)+1,within:x%1000};})};return JSON.stringify({...st,totals:totals(st.session)});},command(action,raw){const p=JSON.parse(raw);window.calls.push({action,p});let s=window.testState.session;
+      if(action==='saveLanguage')window.testState.language=p.language;
       if(action==='saveTheme')window.testState.theme=p.theme;
       if(action==='setInvoicePaid')window.testState.invoices.find(r=>r.filename===p.filename).paid=p.paid;
       if(action==='saveSkill'){const old=window.testState.skills.find(x=>x.id===p.id);if(old)Object.assign(old,p);else window.testState.skills.push({...p,id:'skill-'+Date.now()});window.skillSaved();}
@@ -196,5 +197,16 @@ const path = require('node:path');
   assert.equal(await page.evaluate(()=>JSON.stringify([window.testState.config,window.testState.session,window.testState.history,window.testState.invoices])),financialBefore);
   assert.deepEqual(errors,[]);
   console.log('PASS: work flows, invoice draft/rounding/preview/issue/share/save dispatch, journal management, skill XP, invoice cancellation/correction, billing markers, payments, three themes, 5 pages, 4 widths, 2 heights, and navigation bounds.');
+  const languagePage=await browser.newPage({viewport:{width:412,height:858}});languagePage.on('pageerror',e=>errors.push(e.message));
+  await languagePage.goto('file://'+path.join(__dirname,'../app/src/main/assets/index.html'));
+  assert.equal(await languagePage.locator('html').getAttribute('lang'),'en');assert.equal(await languagePage.locator('#status').innerText(),'PREVIEW');
+  await languagePage.getByRole('button',{name:'Settings',exact:true}).click();assert.equal(await languagePage.locator('#appLanguage').inputValue(),'en');
+  await languagePage.locator('#appLanguage').selectOption('pt');await languagePage.waitForFunction(()=>document.documentElement.lang==='pt-BR');assert.equal(await languagePage.locator('#themesTitle').innerText(),'TEMAS');
+  await languagePage.reload();assert.equal(await languagePage.locator('#appLanguage').inputValue(),'pt');
+  await languagePage.locator('nav [data-page="settings"]').click();await languagePage.locator('#appLanguage').selectOption('en');await languagePage.reload();assert.equal(await languagePage.locator('html').getAttribute('lang'),'en');
+  await languagePage.locator('nav [data-page="settings"]').click();await languagePage.locator('[data-theme-choice="medieval"]').click();await languagePage.screenshot({path:'dist/settings-english.png'});
+  await languagePage.locator('nav [data-page="invoices"]').click();assert.equal(await languagePage.locator('#invoiceIssue').innerText(),'ISSUE AND SAVE PDF');
+  await languagePage.locator('[name="client"]').evaluate(e=>e.value='Trabalho');await languagePage.locator('nav [data-page="settings"]').click();await languagePage.locator('#appLanguage').selectOption('pt');assert.equal(await languagePage.locator('[name="client"]').inputValue(),'Trabalho');
+  assert.deepEqual(errors,[]);await languagePage.close();
   await browser.close();
 })().catch(e=>{console.error(e);process.exit(1);});

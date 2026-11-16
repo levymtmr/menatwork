@@ -56,7 +56,7 @@ final class AppUpdater {
     }
     synchronized JSONObject snapshot() {
         JSONObject j = new JSONObject();
-        Store.put(j, "stage", stage); Store.put(j, "message", message); Store.put(j, "progress", progress);
+        Store.put(j, "stage", stage); Store.put(j, "message", Language.text(context,message)); Store.put(j, "progress", progress);
         Store.put(j, "currentVersion", currentName); Store.put(j, "currentCode", currentCode);
         if (release != null) { Store.put(j, "newVersion", release.versionName); Store.put(j, "notes", release.notes); }
         return j;

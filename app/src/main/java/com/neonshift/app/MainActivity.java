@@ -97,7 +97,8 @@ public class MainActivity extends Activity {
         getWindow().setStatusBarColor(color);getWindow().setNavigationBarColor(color);
         web.setBackgroundColor(color);root.setBackgroundColor(color);
     }
-    private void message(String s) { Toast.makeText(this, s, Toast.LENGTH_LONG).show(); }
+    private String tr(String s){return Language.text(this,s);}
+    private void message(String s) { Toast.makeText(this, tr(s), Toast.LENGTH_LONG).show(); }
     private void dispatch(String action) {
         boolean needsGps = "commute".equals(action) || "return".equals(action) ||
             ("recover".equals(action) && ShiftService.travelling(store.session()));
@@ -136,6 +137,7 @@ public class MainActivity extends Activity {
         @JavascriptInterface public String state() {
             JSONObject j = new JSONObject();
             JSONObject s = store.session();
+            Store.put(j, "language", store.language());
             Store.put(j, "theme", store.theme());
             Store.put(j, "session", s);
             Store.put(j, "config", store.config());
@@ -156,7 +158,9 @@ public class MainActivity extends Activity {
             runOnUiThread(() -> {
                 try {
                     JSONObject p = new JSONObject(payload);
-                    if ("saveTheme".equals(action)) {
+                    if ("saveLanguage".equals(action)) {
+                        store.saveLanguage(p.getString("language"));
+                    } else if ("saveTheme".equals(action)) {
                         store.saveTheme(p.getString("theme"));applyTheme();
                     } else if ("saveJournal".equals(action)) {
                         if(p.optBoolean("finishActive")) {
@@ -194,16 +198,16 @@ public class MainActivity extends Activity {
                     } else if ("saveInvoiceDraft".equals(action)) {
                         invoices.saveDraft(p);
                     } else if ("newInvoiceDraft".equals(action)) {
-                        new AlertDialog.Builder(MainActivity.this).setTitle("Novo invoice?")
-                            .setMessage("Limpar os lançamentos do rascunho? Os PDFs emitidos e os dados do prestador e cliente serão mantidos.")
-                            .setPositiveButton("Novo invoice", (d, w) -> {
+                        new AlertDialog.Builder(MainActivity.this).setTitle(tr("Novo invoice?"))
+                            .setMessage(tr("Limpar os lançamentos do rascunho? Os PDFs emitidos e os dados do prestador e cliente serão mantidos."))
+                            .setPositiveButton(tr("Novo invoice"), (d, w) -> {
                                 try {
                                     JSONObject next = invoices.draft();
                                     Store.put(next, "rows", new JSONArray()); Store.put(next, "number", invoices.nextNumber());
                                     invoices.saveDraft(next);
                                     web.evaluateJavascript("window.invoiceIssued && window.invoiceIssued()", null);
                                 } catch (Exception e) { invoiceError(e); }
-                            }).setNegativeButton("Voltar", null).show();
+                            }).setNegativeButton(tr("Voltar"), null).show();
                     } else if ("previewInvoice".equals(action)) {
                         invoices.saveDraft(p);
                         viewPdf(invoices.preview(p));
@@ -215,16 +219,16 @@ public class MainActivity extends Activity {
                         invoices.validateDraftSources(p);
                         String label = InvoiceEngine.number(p.getInt("number"));
                         String total = InvoiceEngine.total(rows).toPlainString();
-                        new AlertDialog.Builder(MainActivity.this).setTitle("Emitir invoice #" + label + "?")
-                            .setMessage("Cliente: " + p.getJSONObject("profile").optString("client") + "\nTotal: AUD $ " + total +
-                                "\n\nConfira o número com o Invoice Deck do computador. Após emitir, o PDF será preservado neste celular.")
-                            .setPositiveButton("Emitir PDF", (d, w) -> {
+                        new AlertDialog.Builder(MainActivity.this).setTitle(tr("Emitir invoice #" + label + "?"))
+                            .setMessage(tr("Cliente: " + p.getJSONObject("profile").optString("client") + "\nTotal: AUD $ " + total +
+                                "\n\nConfira o número com o Invoice Deck do computador. Após emitir, o PDF será preservado neste celular."))
+                            .setPositiveButton(tr("Emitir PDF"), (d, w) -> {
                                 try {
                                     invoices.issue(p);
                                     web.evaluateJavascript("window.invoiceIssued && window.invoiceIssued()", null);
                                     message("Invoice emitido. Use Enviar para abrir o e-mail com o PDF anexado.");
                                 } catch (Exception e) { invoiceError(e); }
-                            }).setNegativeButton("Voltar", null).show();
+                            }).setNegativeButton(tr("Voltar"), null).show();
                     } else if ("viewInvoice".equals(action)) {
                         invoices.find(p.getString("filename"));
                         viewPdf(new File(invoices.folder(), p.getString("filename")));
@@ -239,10 +243,10 @@ public class MainActivity extends Activity {
                     } else if (Arrays.asList("commute", "work", "pause", "resume", "return", "recover").contains(action)) {
                         dispatch(action);
                     } else if ("finish".equals(action)) {
-                        new AlertDialog.Builder(MainActivity.this).setTitle("Salvar e encerrar?")
-                            .setMessage("Confira a distância e os gastos extras. O registro será salvo no histórico.")
-                            .setPositiveButton("Salvar jornada", (d, w) -> dispatch("finish"))
-                            .setNegativeButton("Voltar", null).show();
+                        new AlertDialog.Builder(MainActivity.this).setTitle(tr("Salvar e encerrar?"))
+                            .setMessage(tr("Confira a distância e os gastos extras. O registro será salvo no histórico."))
+                            .setPositiveButton(tr("Salvar jornada"), (d, w) -> dispatch("finish"))
+                            .setNegativeButton(tr("Voltar"), null).show();
                     } else if ("saveConfig".equals(action)) {
                         validateConfig(p);
                         store.saveConfig(p);
@@ -277,9 +281,9 @@ public class MainActivity extends Activity {
     }
     private interface Work { void run() throws Exception; }
     private void confirm(String title,String text,Work work) {
-        new AlertDialog.Builder(this).setTitle(title).setMessage(text).setPositiveButton("Confirmar",(d,w)->{
+        new AlertDialog.Builder(this).setTitle(tr(title)).setMessage(tr(text)).setPositiveButton(tr("Confirmar"),(d,w)->{
             try{work.run();}catch(Exception e){invoiceError(e);web.evaluateJavascript("window.journalCancelled && window.journalCancelled()",null);}
-        }).setNegativeButton("Voltar",(d,w)->web.evaluateJavascript("window.journalCancelled && window.journalCancelled()",null))
+        }).setNegativeButton(tr("Voltar"),(d,w)->web.evaluateJavascript("window.journalCancelled && window.journalCancelled()",null))
             .setOnCancelListener(d->web.evaluateJavascript("window.journalCancelled && window.journalCancelled()",null)).show();
     }
     private void callback(String name){web.evaluateJavascript("window."+name+" && window."+name+"()",null);}
@@ -298,7 +302,7 @@ public class MainActivity extends Activity {
         startActivity(intent);
     }
     private void invoiceError(Exception e) {
-        String text = e.getMessage() == null ? "Confira os valores informados." : e.getMessage();
+        String text = tr(e.getMessage() == null ? "Confira os valores informados." : e.getMessage());
         message(text);
         web.evaluateJavascript("window.invoiceError && window.invoiceError(" + JSONObject.quote(text) + ")", null);
         web.evaluateJavascript("window.journalError && window.journalError("+JSONObject.quote(text)+")",null);
@@ -319,7 +323,7 @@ public class MainActivity extends Activity {
         if(invoices.needsReview(record))throw new IllegalArgumentException("Uma jornada mudou. Gere uma correção do invoice antes de enviar.");
         File file = new File(invoices.folder(), record.getString("filename"));
         Intent i = InvoiceShare.intent(file, record);
-        startActivity(Intent.createChooser(i, "Enviar invoice · revise e envie no aplicativo escolhido"));
+        startActivity(Intent.createChooser(i, tr("Enviar invoice · revise e envie no aplicativo escolhido")));
     }
     private void validateConfig(JSONObject p) throws Exception {
         Store.validateConfig(p);

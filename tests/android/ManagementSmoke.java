@@ -16,6 +16,7 @@ public class ManagementSmoke extends Instrumentation {
   c.getSharedPreferences("neonshift",0).edit().clear().commit();c.getSharedPreferences("invoice_deck_mobile",0).edit().clear().commit();
   Store store=new Store(c);invoices=new InvoiceStore(c);final InvoiceStore inv=invoices;
   for(File f:invoices.folder().listFiles())f.delete();
+  check(store.language().equals("en"),"English default");store.saveLanguage("pt");check(new Store(c).language().equals("pt"),"Portuguese persists");check(Language.text(c,"REMOVER").equals("REMOVER"),"Portuguese native text");store.saveLanguage("en");check(Language.text(c,"REMOVER").equals("REMOVE"),"English native text");bad(()->store.saveLanguage("de"),"invalid language blocked");
   check(store.theme().equals("pipboy"),"default theme");
   for(String theme:new String[]{"medieval","cyberpunk","pipboy"}){store.saveTheme(theme);check(new Store(c).theme().equals(theme),"theme persistence "+theme);}
   bad(()->store.saveTheme("unknown"),"invalid theme blocked");
@@ -29,6 +30,7 @@ public class ManagementSmoke extends Instrumentation {
   store.removeSkill(skill,true);check(store.progress().getJSONArray("skills").getJSONObject(0).getLong("xp")==0,"removed skill excluded");check(store.progress().getLong("xp")==650,"global hours unchanged by skill removal");store.removeSkill(skill,false);
   JSONObject draft=invoices.draft(),profile=draft.getJSONObject("profile");for(String k:new String[]{"name","client","bank","account_name","bsb","account"})profile.put(k,"Example");
   JSONObject row=new JSONObject().put("date",date).put("address","Example site").put("hours","6.5").put("sourceId",id).put("sourceFingerprint",Store.fingerprint(saved));draft.put("rows",new JSONArray().put(row));
+  store.saveLanguage("pt");byte[] pdfPt=java.nio.file.Files.readAllBytes(invoices.preview(draft).toPath());store.saveLanguage("en");byte[] pdfEn=java.nio.file.Files.readAllBytes(invoices.preview(draft).toPath());check(Arrays.equals(pdfPt,pdfEn),"PDF unaffected by app language");check(new String(pdfEn,java.nio.charset.StandardCharsets.ISO_8859_1).contains("INVOICE FOR SERVICES"),"PDF always English");
   File file=invoices.issue(draft);byte[] bytes=java.nio.file.Files.readAllBytes(file.toPath());String filename=file.getName();
   check(!invoices.needsReview(invoices.find(filename)),"new invoice current");
   invoices.setPaid(filename,true);check(new InvoiceStore(c).find(filename).getBoolean("paid"),"payment persists");check(invoices.find(filename).has("paidAt"),"payment date recorded");check(invoices.find(filename).getJSONArray("sourceIds").getString(0).equals(id),"paid links preserved");check(store.progress().getLong("xp")==650,"payment does not alter XP");
