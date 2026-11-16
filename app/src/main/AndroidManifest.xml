@@ -8,7 +8,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
-    <application android:label="Neon Shift" android:icon="@drawable/ic_launcher"
+    <application android:label="Menatwork" android:icon="@drawable/ic_launcher"
         android:allowBackup="false" android:usesCleartextTraffic="false" android:enableOnBackInvokedCallback="false"
         android:theme="@style/AppTheme" android:supportsRtl="true">
         <provider android:name=".InvoiceProvider" android:authorities="com.neonshift.app.invoices"

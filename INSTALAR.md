@@ -2,9 +2,9 @@
 
 Se já usa a versão anterior, instale o novo APK por cima dela e escolha **Atualizar**. Não desinstale: assim seus registros e ajustes são preservados.
 
-1. Copie `neon-shift-1.3.0.apk` para o celular, por cabo USB ou outro meio de sua preferência.
+1. Copie `neon-shift-1.4.0.apk` para o celular, por cabo USB ou outro meio de sua preferência.
 2. Abra o APK pelo aplicativo **Meus Arquivos**. Se o Android pedir, permita instalar aplicativos dessa fonte e volte para concluir a instalação.
-3. Abra **Neon Shift** e entre em **Ajustes**. Configure sua moeda, hora de trabalho, imposto estimado, consumo do carro, preço da gasolina e custos por km. Os valores iniciais são exemplos.
+3. Abra **Menatwork** e entre em **Ajustes**. Configure sua moeda, hora de trabalho, imposto estimado, consumo do carro, preço da gasolina e custos por km. Os valores iniciais são exemplos.
 4. Ao sair para trabalhar, toque em **Iniciar trajeto ao trabalho**. Permita localização precisa e notificações quando solicitado. O GPS funciona melhor ao ar livre.
 5. Ao começar a trabalhar, toque em **Cheguei · iniciar trabalho**. O GPS da ida para; começa a contagem de horas pagas. Use **Pausar** para intervalos não remunerados.
 6. Para incluir a volta, toque em **Terminar trabalho e registrar volta**. O tempo pago para e o GPS volta a medir. Ao chegar, salve a jornada. Se não quiser registrar a volta, use **Encerrar** diretamente.
@@ -33,8 +33,19 @@ Se ainda não tiver o botão de atualização, instale a versão atual uma vez p
 
 1. Abra **Ajustes → Atualizar aplicativo**.
 2. Se houver uma versão mais nova, o app baixa o APK oficial e verifica sua assinatura e integridade.
-3. Na primeira vez, o Android pode pedir para permitir instalações a partir do Neon Shift. Ative a permissão e volte ao aplicativo.
+3. Na primeira vez, o Android pode pedir para permitir instalações a partir do Menatwork. Ative a permissão e volte ao aplicativo.
 4. Confirme **Atualizar** na tela do instalador do Android. Essa confirmação do sistema é necessária.
 5. Se cancelar, use **Instalar atualização** para abrir a etapa novamente. Se estiver sem internet, tente mais tarde.
 
 Atualizar preserva registros e invoices. Não desinstale a versão anterior. O botão consulta apenas as versões publicadas como Releases oficiais, não cada alteração de código no GitHub.
+
+
+## Dias esquecidos, correções e XP
+
+Em **Histórico → Adicionar dia de trabalho**, informe a data passada e as horas totais ou os horários com pausas. Inclua local, km e gastos. Depois use **Adicionar ao invoice** para cobrar na sexta-feira. **Editar** corrige qualquer jornada salva. **Remover** tira dos números e do XP; a lixeira permite restaurar.
+
+Se esqueceu o cronômetro ligado, em **Hoje → Corrigir horários / encerrar** informe quando realmente terminou. **Descartar jornada atual** remove um turno iniciado por engano.
+
+Na aba **Invoice**, use **Remover** para tirar uma fatura dos totais ou **Corrigir / novo rascunho** para emitir uma substituta com número novo. Confira os lançamentos antes de emitir. O PDF anterior fica preservado; um documento já enviado ao cliente não muda automaticamente. Ao alterar uma jornada vinculada, o invoice é sinalizado para revisão.
+
+Na aba **Skills**, crie suas habilidades. Vincule-as ao turno ou a jornadas do histórico. Cada hora paga vale 100 XP e cada 1.000 XP sobe um nível. Ajustes e exclusões recalculam a experiência; o XP do turno atual é provisório até salvar.

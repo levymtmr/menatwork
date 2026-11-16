@@ -31,7 +31,7 @@
   for(const [key,label]of Object.entries(fields))input(label,key,'',$((key.startsWith('client')||key==='description')?'clientFields':'sellerFields'),key.includes('address')||key==='description'?'textarea':key.includes('email')?'email':'text');
   function readDraft(){
     const profile={};for(const key of Object.keys(fields))profile[key]=document.querySelector(`[name="${key}"]`).value.trim();
-    const rows=[...document.querySelectorAll('.invoice-entry')].map(el=>({date:el.querySelector('[name="date"]').value,address:el.querySelector('[name="workAddress"]').value.trim(),hours:el.querySelector('[name="hours"]').value.trim()||'0',sourceId:el.dataset.sourceId||''}));
+    const rows=[...document.querySelectorAll('.invoice-entry')].map(el=>({date:el.querySelector('[name="date"]').value,address:el.querySelector('[name="workAddress"]').value.trim(),hours:el.querySelector('[name="hours"]').value.trim()||'0',sourceId:el.dataset.sourceId||'',sourceFingerprint:el.dataset.sourceFingerprint||''}));
     return {number:Number($('invoiceNumber').value),rate:$('invoiceRate').value.trim().replace(',','.'),profile,rows};
   }
   function updateTotals(){
@@ -42,7 +42,7 @@
   function save(){clearTimeout(saveTimer);if(native&&initialized)cmd('saveInvoiceDraft',readDraft());}
   function changed(){editing=true;updateTotals();clearTimeout(saveTimer);saveTimer=setTimeout(save,500);}
   function addRow(row={date:today(),address:'',hours:'0',sourceId:''},persist=true){
-    const box=text('div','','invoice-entry');box.dataset.sourceId=row.sourceId||'';
+    const box=text('div','','invoice-entry');box.dataset.sourceId=row.sourceId||'';box.dataset.sourceFingerprint=row.sourceFingerprint||'';
     const top=text('div','','entry-top');top.append(text('span',row.sourceId?'JORNADA DO HISTÓRICO':'LANÇAMENTO MANUAL'));
     const remove=text('button','×','remove-entry');remove.type='button';remove.setAttribute('aria-label','Remover lançamento');remove.onclick=()=>{box.remove();changed();};top.append(remove);box.append(top);
     const grid=text('div','','invoice-grid');input('Data','date',row.date,grid,'date');const h=input('Horas reais','hours',row.hours,grid);h.inputMode='decimal';h.maxLength=32;box.append(grid);
@@ -64,14 +64,25 @@
     return d;
   }
   function perform(action){error('');try{const draft=validDraft();clearTimeout(saveTimer);cmd(action,draft);}catch(e){error(e.message);}}
-  function recordButton(label,action,filename,cls='secondary'){const b=text('button',label,'button '+cls);b.onclick=()=>cmd(action,{filename});return b;}
+  function recordButton(label,action,filename,cls='secondary'){const b=text('button',label,'button '+cls);b.onclick=()=>{clearTimeout(saveTimer);cmd(action,{filename});};return b;}
   function records(){
     const list=state.invoices||[],signature=JSON.stringify(list);if(signature===recordsSignature)return;recordsSignature=signature;
-    $('invoiceRecords').replaceChildren();
-    if(!list.length){$('invoiceRecords').append(text('p','Seus PDFs emitidos neste celular aparecerão aqui.','empty'));return;}
-    for(const r of list){
-      const card=text('article','','panel history-card');card.append(text('h3','INVOICE #'+String(r.number).padStart(3,'0')),text('p',r.client,'muted'),text('p',cash(Math.round(Number(r.total)*100)),'history-net'),text('p','Emissão: '+r.issued+' · AUD','muted'));
-      const actions=text('div','','invoice-record-actions');actions.append(recordButton('ABRIR PDF','viewInvoice',r.filename),recordButton('SALVAR CÓPIA','saveInvoicePdf',r.filename),recordButton('↗ ENVIAR AO CLIENTE','shareInvoice',r.filename,'primary send'));card.append(actions);$('invoiceRecords').append(card);
+    const active=list.filter(r=>r.status!=='cancelled'),removed=list.filter(r=>r.status==='cancelled');
+    $('invoiceLedgerTotals').textContent=active.length+' invoices ativos · AUD '+cash(active.reduce((sum,r)=>sum+Math.round(Number(r.total)*100),0));
+    $('invoiceTrash').classList.toggle('hidden',!removed.length);$('invoiceTrashCount').textContent=removed.length;
+    for(const [target,items] of [[$('invoiceRecords'),active],[$('invoiceTrashList'),removed]]){
+      target.replaceChildren();if(!items.length)target.append(text('p','Nenhum invoice neste grupo.','empty'));
+      for(const r of items){
+        const cancelled=r.status==='cancelled',card=text('article','','panel history-card');card.append(text('h3','INVOICE #'+String(r.number).padStart(3,'0')),text('p',r.client,'muted'),text('p',cash(Math.round(Number(r.total)*100)),'history-net'),text('p','Emissão: '+r.issued+' · AUD','muted'));
+        if(cancelled)card.append(text('p','CANCELADO · não entra no total. O PDF original e o número ficam preservados.','help'));
+        if(r.needsReview)card.append(text('p','REVISÃO NECESSÁRIA: uma jornada vinculada mudou. Crie uma correção antes de enviar.','notice'));
+        const actions=text('div','','invoice-record-actions');actions.append(recordButton('ABRIR PDF','viewInvoice',r.filename),recordButton('SALVAR CÓPIA','saveInvoicePdf',r.filename));
+        if(cancelled)actions.append(recordButton('RESTAURAR','restoreInvoice',r.filename),recordButton('CRIAR CORREÇÃO','correctInvoice',r.filename));else{
+          if(!r.needsReview)actions.append(recordButton('↗ ENVIAR AO CLIENTE','shareInvoice',r.filename,'primary send'));
+          actions.append(recordButton('CORRIGIR / NOVO RASCUNHO','correctInvoice',r.filename),recordButton('REMOVER','cancelInvoice',r.filename,'subtle'));
+        }
+        card.append(actions);target.append(card);
+      }
     }
   }
   window.InvoiceUI={
@@ -79,14 +90,16 @@
     addJourney(s){
       const d=readDraft(),id=String(s.id||s.startedAt);
       if(s.config&&s.config.currency!=='AUD'){error('A jornada usa outra moeda. Preencha manualmente uma tarifa em AUD; o app não converte moedas.');return false;}
-      const already=(state.invoices||[]).find(r=>(r.sourceIds||[]).includes(id));
+      if(s.deleted){error('Restaure a jornada antes de adicioná-la.');return false;}
+      const already=(state.invoices||[]).find(r=>r.status!=='cancelled'&&(r.sourceIds||[]).includes(id));
       if(already||d.rows.some(r=>r.sourceId===id)){error('Essa jornada já foi adicionada a um invoice.');return false;}
-      const date=new Intl.DateTimeFormat('en-CA',{timeZone:'Australia/Adelaide',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(s.startedAt));
-      error('');addRow({date,address:s.worksite||'',hours:(s.workedMs/3600000).toFixed(10).replace(/0+$/,'').replace(/\.$/,''),sourceId:id});return true;
+      const date=s.workDate||new Intl.DateTimeFormat('en-CA',{timeZone:'Australia/Adelaide',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(s.startedAt));
+      error('');addRow({date,address:s.worksite||'',hours:(s.workedMs/3600000).toFixed(10).replace(/0+$/,'').replace(/\.$/,''),sourceId:id,sourceFingerprint:s.billingFingerprint||''});return true;
     }
   };
   window.invoiceIssued=()=>{clearTimeout(saveTimer);initialized=false;editing=false;recordsSignature='';error('');};
   $('invoices').addEventListener('input',e=>{if(e.target.matches('input,textarea'))changed();});
+  $('invoiceRefreshSources').onclick=()=>{clearTimeout(saveTimer);cmd('refreshInvoiceSources',readDraft());};
   $('invoiceAddRow').onclick=()=>addRow();$('invoicePreview').onclick=()=>perform('previewInvoice');$('invoiceIssue').onclick=()=>perform('issueInvoice');$('invoiceClear').onclick=()=>{clearTimeout(saveTimer);cmd('newInvoiceDraft');};
   document.addEventListener('visibilitychange',()=>{if(document.hidden&&editing)save();});
 })();

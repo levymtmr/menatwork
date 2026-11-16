@@ -17,10 +17,22 @@ const path = require('node:path');
   });
   await page.addInitScript(()=>{
     const cfg={currency:'AUD',hourly:32,tax:15,consumption:8,fuelPrice:1.85,tyres:.025,maintenance:.05,depreciation:.1};
-    window.testState={session:{},config:cfg,history:[],serviceRunning:false,now:Date.now()};
+    window.testState={session:{},config:cfg,history:[],skills:[],serviceRunning:false,now:Date.now()};
     window.calls=[];
     function totals(s){const c=s.config||window.testState.config,ms=s.workedMs||0,km=s.km||0,gross=ms/3600000*c.hourly,tax=gross*c.tax/100,fuel=km*c.consumption/100*c.fuelPrice,tyres=km*c.tyres,maintenance=km*c.maintenance,depreciation=km*c.depreciation,extras=s.extras||0,carCosts=fuel+tyres+maintenance+depreciation+extras;return{gross,tax,fuel,tyres,maintenance,depreciation,extras,carCosts,net:gross-tax-carCosts,workedMs:ms};}
-    window.Android={state(){if(!window.testState.invoiceDraft){window.testState.invoiceDraft={profile:{...window.invoiceDefaults.profile,name:'Example Worker',client:'Example Client',bank:'Example Bank',account_name:'Example Worker',bsb:'000-000',account:'00000000',client_email:'client@example.com'},number:18,rate:'32',rows:[]};window.testState.invoices=[];window.testState.nextInvoiceNumber=18;window.testState.invoiceToday='2026-11-16';window.testState.update={stage:'idle',message:'Ready',currentVersion:'1.2.0',progress:0};}return JSON.stringify({...window.testState,totals:totals(window.testState.session)});},command(action,raw){const p=JSON.parse(raw);window.calls.push({action,p});let s=window.testState.session;
+    window.Android={state(){if(!window.testState.invoiceDraft){window.testState.invoiceDraft={profile:{...window.invoiceDefaults.profile,name:'Example Worker',client:'Example Client',bank:'Example Bank',account_name:'Example Worker',bsb:'000-000',account:'00000000',client_email:'client@example.com'},number:18,rate:'32',rows:[]};window.testState.invoices=[];window.testState.nextInvoiceNumber=18;window.testState.invoiceToday='2026-11-16';window.testState.update={stage:'idle',message:'Ready',currentVersion:'1.2.0',progress:0};}const st=window.testState,ms=st.history.filter(r=>!r.deleted).reduce((n,r)=>n+r.workedMs,0),xp=Math.floor(ms/36000);st.progression={xp,level:Math.floor(xp/1000)+1,within:xp%1000,workedMs:ms,pendingXp:Math.floor((st.session.workedMs||0)/36000),skills:st.skills.map(skill=>{const work=skill.deleted?0:st.history.filter(r=>!r.deleted&&(r.skillIds||[]).includes(skill.id)).reduce((n,r)=>n+r.workedMs,0),x=Math.floor(work/36000);return {...skill,workedMs:work,xp:x,level:Math.floor(x/1000)+1,within:x%1000};})};return JSON.stringify({...st,totals:totals(st.session)});},command(action,raw){const p=JSON.parse(raw);window.calls.push({action,p});let s=window.testState.session;
+      if(action==='saveSkill'){const old=window.testState.skills.find(x=>x.id===p.id);if(old)Object.assign(old,p);else window.testState.skills.push({...p,id:'skill-'+Date.now()});window.skillSaved();}
+      if(action==='removeSkill'||action==='restoreSkill')window.testState.skills.find(x=>x.id===p.id).deleted=action==='removeSkill';
+      if(action==='assignActiveSkills')s.skillIds=p.skillIds;
+      if(action==='saveJournal'){
+        let ms;if(p.entryMode==='hours'){const h=p.hours.replace(',','.');ms=(h.includes(':')?Number(h.split(':')[0])+Number(h.split(':')[1])/60:Number(h))*3600000;}else{const min=t=>Number(t.split(':')[0])*60+Number(t.split(':')[1]);ms=(min(p.endTime)-min(p.startTime)+(p.nextDay?1440:0)-Number(p.breakMinutes))*60000;}
+        const record={...p,id:p.id||'manual-'+p.requestId,workedMs:ms,phase:'done',startedAt:new Date(p.workDate+'T08:00:00').getTime(),endedAt:new Date(p.workDate+'T17:00:00').getTime()};record.totals=totals(record);record.billingFingerprint=p.workDate+'|'+ms+'|'+p.worksite;
+        window.testState.history=window.testState.history.filter(x=>String(x.id||x.startedAt)!==record.id);window.testState.history.unshift(record);if(p.finishActive)window.testState.session={};window.journalSaved();
+      }
+      if(action==='removeJournal'||action==='restoreJournal')window.testState.history.find(x=>String(x.id||x.startedAt)===p.id).deleted=action==='removeJournal';
+      if(action==='cancelInvoice'||action==='restoreInvoice')window.testState.invoices.find(x=>x.filename===p.filename).status=action==='cancelInvoice'?'cancelled':'issued';
+      if(action==='correctInvoice'){const record=window.testState.invoices.find(x=>x.filename===p.filename);record.status='cancelled';window.testState.invoiceDraft={...record.draft,number:window.testState.nextInvoiceNumber};window.invoiceIssued();}
+      if(action==='refreshInvoiceSources'){window.testState.invoiceDraft=p;window.invoiceIssued();}
       if(action==='checkUpdate')window.testState.update={...window.testState.update,stage:'checking',message:'Checking'};
       if(action==='saveInvoiceDraft')window.testState.invoiceDraft=p;
       if(action==='issueInvoice'){
@@ -75,7 +87,7 @@ const path = require('node:path');
   await page.locator('nav button[data-page="history"]').click();
   assert.equal(await page.locator('.history-card').count(),1);
   assert.equal(await page.locator('.history-net').innerText(),'$ 167,76');
-  await page.locator('#history summary').click();await page.screenshot({path:'dist/tela-historico.png',fullPage:true});
+  await page.locator('.history-card .history-details summary').click();await page.screenshot({path:'dist/tela-historico.png',fullPage:true});
   await page.locator('#export').click();
   assert(await page.evaluate(()=>window.calls.some(x=>x.action==='export')));
   await page.locator('nav button[data-page="today"]').click();
@@ -121,7 +133,7 @@ const path = require('node:path');
   await page.locator('#invoiceRate').fill('0,02');
   assert.equal(await page.locator('#invoiceTotal').innerText(),'$ 0,01');
   // Narrow phone screens must not overflow horizontally.
-  for(const width of [320,360,412,480])for(const height of [400,858]){await page.setViewportSize({width,height});for(const section of ['today','history','invoices','settings']){await page.locator(`nav button[data-page="${section}"]`).click();assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`overflow at ${width} on ${section}`);for(const b of await page.locator('nav button').all()){const box=await b.boundingBox();assert(box.y>=0&&box.y+box.height<=height,`nav outside viewport at ${width}x${height}`);}}}
+  for(const width of [320,360,412,480])for(const height of [400,858]){await page.setViewportSize({width,height});for(const section of ['today','history','skills','invoices','settings']){await page.locator(`nav button[data-page="${section}"]`).click();assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`overflow at ${width} on ${section}`);for(const b of await page.locator('nav button').all()){const box=await b.boundingBox();assert(box.y>=0&&box.y+box.height<=height,`nav outside viewport at ${width}x${height}`);}}}
   assert.deepEqual(errors,[]);
   await page.setViewportSize({width:412,height:858});
   await page.locator('nav button[data-page="settings"]').click();
@@ -140,6 +152,30 @@ const path = require('node:path');
   await page.evaluate(()=>window.testState.update={...window.testState.update,stage:'current',message:'Already current'});
   await page.waitForFunction(()=>document.querySelector('#updateMessage').textContent==='Already current');
   assert.equal(await page.evaluate(()=>window.calls.filter(c=>c.action==='installUpdate').length),1);
-  console.log('PASS: work flows, invoice draft/rounding/preview/issue/share/save dispatch, 4 pages, 4 widths, 2 heights, and navigation bounds.');
+  // User-managed skills and retrospective shifts exercise real form dispatch and refresh.
+  await page.locator('nav [data-page="skills"]').click();await page.locator('#newSkill').click();
+  await page.locator('#skillName').fill('Cladding');await page.locator('#skillDescription').fill('Instalação e acabamento');await page.locator('#saveSkill').click();
+  await page.waitForFunction(()=>document.querySelector('#skillList').textContent.includes('Cladding'));
+  await page.locator('nav [data-page="history"]').click();await page.locator('#newJournal').click();
+  await page.locator('#j-date').fill('2026-11-13');await page.locator('#j-hours').fill('08:30');await page.locator('#j-worksite').fill('Example retroactive site');await page.locator('#journalSkillChoices input').check();
+  await page.locator('#j-km').fill('12,5');await page.locator('#j-extras').fill('3');
+  const formBox=await page.locator('#saveJournal').boundingBox();assert(formBox.y+formBox.height<=858);
+  await page.screenshot({path:'dist/tela-editar-jornada.png'});await page.locator('#saveJournal').click();
+  await page.locator('#journalEditor').waitFor({state:'hidden'});
+  let retro=page.locator('#historyList article').filter({hasText:'Example retroactive site'});assert.equal(await retro.count(),1);
+  await page.locator('nav [data-page="skills"]').click();assert((await page.locator('#skillList').innerText()).includes('850 XP'));await page.screenshot({path:'dist/tela-skills.png'});
+  await page.locator('nav [data-page="history"]').click();await retro.getByRole('button',{name:'EDITAR',exact:true}).click();
+  await page.locator('#j-mode').selectOption('times');await page.locator('#j-start').fill('08:00');await page.locator('#j-end').fill('16:30');await page.locator('#j-break').fill('30');await page.locator('#saveJournal').click();await page.locator('#journalEditor').waitFor({state:'hidden'});
+  assert.equal(await retro.count(),1);assert((await retro.innerText()).includes('8 h'));
+  await retro.getByRole('button',{name:'REMOVER',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#journalTrashCount').textContent==='1');assert.equal(await retro.count(),0);
+  await page.locator('nav [data-page="skills"]').click();assert((await page.locator('#skillList').innerText()).includes('0 XP'));
+  await page.locator('nav [data-page="history"]').click();await page.locator('#journalTrash > summary').click();await page.locator('#journalTrashList').getByRole('button',{name:'RESTAURAR',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#journalTrash').classList.contains('hidden'));assert.equal(await retro.count(),1);
+  await page.locator('nav [data-page="today"]').click();await page.locator('#activeSkillChoices input').check();await page.locator('#saveActiveSkills').click();assert(await page.evaluate(()=>window.calls.some(c=>c.action==='assignActiveSkills')));
+  await page.getByRole('button',{name:'CORRIGIR HORÁRIOS / ENCERRAR',exact:true}).click();await page.locator('#j-date').fill('2026-11-12');await page.locator('#j-hours').fill('6');await page.locator('#saveJournal').click();await page.waitForFunction(()=>document.querySelector('#status').textContent==='PRONTO');
+  await page.locator('nav [data-page="invoices"]').click();await page.locator('#invoiceRecords').getByRole('button',{name:'REMOVER',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#invoiceTrashCount').textContent==='1');assert((await page.locator('#invoiceLedgerTotals').innerText()).includes('0 invoices'));
+  await page.locator('#invoiceTrash > summary').click();await page.locator('#invoiceTrashList').getByRole('button',{name:'RESTAURAR',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#invoiceRecords').textContent.includes('INVOICE #018'));
+  await page.locator('#invoiceRecords').getByRole('button',{name:'CORRIGIR / NOVO RASCUNHO',exact:true}).click();await page.waitForFunction(()=>document.querySelectorAll('.invoice-entry').length===3);
+  assert.deepEqual(errors,[]);
+  console.log('PASS: work flows, invoice draft/rounding/preview/issue/share/save dispatch, journal management, skill XP, invoice cancellation/correction, 5 pages, 4 widths, 2 heights, and navigation bounds.');
   await browser.close();
 })().catch(e=>{console.error(e);process.exit(1);});

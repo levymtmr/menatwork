@@ -44,7 +44,7 @@ public class ShiftService extends Service implements LocationListener {
         JSONObject cfg = s.optJSONObject("config");
         String currency = cfg == null ? "AUD" : cfg.optString("currency", "AUD");
         String phase = s.optString("phase");
-        String title = travelling(s) ? "Neon Shift · registrando trajeto" : "pause".equals(phase) ? "Neon Shift · pausa" : "Neon Shift · trabalhando";
+        String title = travelling(s) ? "Menatwork · registrando trajeto" : "pause".equals(phase) ? "Menatwork · pausa" : "Menatwork · trabalhando";
         long mins = t.optLong("workedMs") / 60000;
         String text = String.format(new Locale("pt", "BR"), "%s $ %.2f líquidos · %02dh %02dmin · %.1f km", currency,
             t.optDouble("net"), mins / 60, mins % 60, s.optDouble("km", 0));
@@ -74,11 +74,13 @@ public class ShiftService extends Service implements LocationListener {
             Store.put(s, "extras", 0);
             Store.put(s, "workedMs", 0);
             Store.put(s, "config", store.config());
+            Store.put(s, "skillIds", new org.json.JSONArray());
             Store.put(s, "phase", "commute".equals(action) ? "commute" : "work");
-            if ("work".equals(action)) Store.startSegment(s);
+            if ("work".equals(action)) { Store.startSegment(s); Store.put(s,"workStartedAt",now);Store.put(s,"workDate",java.time.LocalDate.now().toString()); }
         } else if ("work".equals(action) && "commute".equals(phase)) {
             Store.put(s, "phase", "work");
             Store.startSegment(s);
+            Store.put(s,"workStartedAt",now);Store.put(s,"workDate",java.time.LocalDate.now().toString());
         } else if ("pause".equals(action) && "work".equals(phase)) {
             Store.put(s, "workedMs", Store.elapsed(s));
             Store.put(s, "phase", "pause");

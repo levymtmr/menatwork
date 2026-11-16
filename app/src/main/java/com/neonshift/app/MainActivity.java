@@ -131,22 +131,49 @@ public class MainActivity extends Activity {
             Store.put(j, "session", s);
             Store.put(j, "config", store.config());
             Store.put(j, "totals", Store.totals(s, store.config()));
-            Store.put(j, "history", store.history());
+            Store.put(j, "history", store.annotatedHistory());
             Store.put(j, "serviceRunning", ShiftService.running);
             Store.put(j, "now", System.currentTimeMillis());
             Store.put(j, "invoiceDraft", invoices.draft());
-            Store.put(j, "invoices", invoices.records());
+            Store.put(j, "invoices", invoices.annotatedRecords());
             Store.put(j, "nextInvoiceNumber", invoices.nextNumber());
             Store.put(j, "invoiceToday", InvoiceStore.today().toString());
             Store.put(j, "invoiceAddresses", invoices.seed.optJSONArray("addresses"));
             Store.put(j, "update", updater.snapshot());
+            Store.put(j,"skills",store.skills());Store.put(j,"progression",store.progress());
             return j.toString();
         }
         @JavascriptInterface public void command(String action, String payload) {
             runOnUiThread(() -> {
                 try {
                     JSONObject p = new JSONObject(payload);
-                    if ("checkUpdate".equals(action)) {
+                    if ("saveJournal".equals(action)) {
+                        if(p.optBoolean("finishActive")) {
+                            confirm("Salvar término corrigido?","O cronômetro será encerrado e o registro usará os horários/horas informados. Os totais e o XP serão recalculados.",()->{
+                                store.saveJournal(p);stopService(new Intent(MainActivity.this,ShiftService.class));callback("journalSaved");message("Jornada corrigida e encerrada.");
+                            });
+                        } else {store.saveJournal(p);callback("journalSaved");message("Dia de trabalho salvo. Totais e XP atualizados.");}
+                    } else if ("removeJournal".equals(action)||"restoreJournal".equals(action)) {
+                        boolean deleted="removeJournal".equals(action);
+                        confirm(deleted?"Remover jornada?":"Restaurar jornada?",deleted?"A jornada vai para a lixeira e sai dos totais e do XP. Invoices vinculados ficarão sinalizados para revisão.":"A jornada voltará aos totais e ao XP.",()->{store.removeJournal(p.getString("id"),deleted);message(deleted?"Jornada removida dos totais.":"Jornada restaurada.");});
+                    } else if ("discardActive".equals(action)) {
+                        confirm("Descartar jornada em andamento?","O registro vai para a lixeira e não contará nos totais nem no XP.",()->{store.discardSession();stopService(new Intent(MainActivity.this,ShiftService.class));message("Jornada descartada.");});
+                    } else if ("saveSkill".equals(action)) {
+                        store.saveSkill(p);callback("skillSaved");message("Habilidade salva.");
+                    } else if ("removeSkill".equals(action)||"restoreSkill".equals(action)) {
+                        boolean deleted="removeSkill".equals(action);
+                        confirm(deleted?"Remover habilidade?":"Restaurar habilidade?",deleted?"A habilidade vai para a lixeira. As jornadas e o XP geral permanecem.":"O XP será recalculado pelas jornadas vinculadas.",()->{store.removeSkill(p.getString("id"),deleted);message("Habilidade atualizada.");});
+                    } else if ("assignActiveSkills".equals(action)) {
+                        JSONObject s=store.session();if(!s.has("phase")||!Store.id(s).equals(p.getString("id")))throw new IllegalArgumentException("A jornada em andamento mudou.");
+                        Store.put(s,"skillIds",store.validSkillIds(p.getJSONArray("skillIds")));store.save(s);message("Habilidades vinculadas ao turno.");
+                    } else if ("cancelInvoice".equals(action)||"restoreInvoice".equals(action)||"correctInvoice".equals(action)) {
+                        String filename=p.getString("filename");
+                        if("correctInvoice".equals(action))confirm("Preparar correção?","O invoice anterior sairá dos totais, mantendo seu número reservado. O rascunho atual será substituído pela correção, com as jornadas atualizadas. Um PDF já enviado ao cliente não muda automaticamente.",()->{invoices.correct(filename);callback("invoiceIssued");message("Correção preparada. Confira os lançamentos e emita o novo PDF.");});
+                        else if("cancelInvoice".equals(action))confirm("Remover invoice dos totais?","Ele irá para a lixeira e suas jornadas poderão ser cobradas novamente. O PDF e o número ficam preservados. Um PDF já enviado ao cliente não muda automaticamente.",()->{invoices.cancel(filename);message("Invoice removido dos totais.");});
+                        else confirm("Restaurar invoice?","Ele voltará aos totais se as jornadas continuarem válidas e não estiverem em outro invoice ativo.",()->{invoices.restore(filename);message("Invoice restaurado.");});
+                    } else if ("refreshInvoiceSources".equals(action)) {
+                        invoices.saveDraft(invoices.refreshSources(p));callback("invoiceIssued");message("Vínculos atualizados. Revise horas e valores antes de emitir.");
+                    } else if ("checkUpdate".equals(action)) {
                         updater.checkAndDownload();
                     } else if ("installUpdate".equals(action)) {
                         installUpdate();
@@ -171,6 +198,7 @@ public class MainActivity extends Activity {
                         java.util.List<InvoiceEngine.Item> rows = InvoiceStore.items(p);
                         InvoiceStore.profile(p);
                         invoices.available(p.getInt("number"), rows);
+                        invoices.validateDraftSources(p);
                         String label = InvoiceEngine.number(p.getInt("number"));
                         String total = InvoiceEngine.total(rows).toPlainString();
                         new AlertDialog.Builder(MainActivity.this).setTitle("Emitir invoice #" + label + "?")
@@ -233,10 +261,18 @@ public class MainActivity extends Activity {
             });
         }
     }
+    private interface Work { void run() throws Exception; }
+    private void confirm(String title,String text,Work work) {
+        new AlertDialog.Builder(this).setTitle(title).setMessage(text).setPositiveButton("Confirmar",(d,w)->{
+            try{work.run();}catch(Exception e){invoiceError(e);web.evaluateJavascript("window.journalCancelled && window.journalCancelled()",null);}
+        }).setNegativeButton("Voltar",(d,w)->web.evaluateJavascript("window.journalCancelled && window.journalCancelled()",null))
+            .setOnCancelListener(d->web.evaluateJavascript("window.journalCancelled && window.journalCancelled()",null)).show();
+    }
+    private void callback(String name){web.evaluateJavascript("window."+name+" && window."+name+"()",null);}
     private void installUpdate() throws Exception {
         File file = updater.readyFile();
         if (!getPackageManager().canRequestPackageInstalls()) {
-            message("Permita atualizar a partir do Neon Shift nesta tela. Depois, volte para concluir.");
+            message("Permita atualizar a partir do Menatwork nesta tela. Depois, volte para concluir.");
             startActivityForResult(new Intent(android.provider.Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
                 Uri.parse("package:" + getPackageName())), 30);
             return;
@@ -244,13 +280,15 @@ public class MainActivity extends Activity {
         Uri uri = new Uri.Builder().scheme("content").authority("com.neonshift.app.updates").appendPath(file.getName()).build();
         Intent intent = new Intent(Intent.ACTION_VIEW).setDataAndType(uri, "application/vnd.android.package-archive")
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-        intent.setClipData(ClipData.newRawUri("Atualização Neon Shift", uri));
+        intent.setClipData(ClipData.newRawUri("Atualização Menatwork", uri));
         startActivity(intent);
     }
     private void invoiceError(Exception e) {
         String text = e.getMessage() == null ? "Confira os valores informados." : e.getMessage();
         message(text);
         web.evaluateJavascript("window.invoiceError && window.invoiceError(" + JSONObject.quote(text) + ")", null);
+        web.evaluateJavascript("window.journalError && window.journalError("+JSONObject.quote(text)+")",null);
+        web.evaluateJavascript("window.skillError && window.skillError("+JSONObject.quote(text)+")",null);
     }
     private Uri pdfUri(File file) {
         return InvoiceShare.uri(file);
@@ -263,25 +301,21 @@ public class MainActivity extends Activity {
         catch (ActivityNotFoundException e) { message("Use um leitor de PDF para abrir a prévia. O invoice também pode ser salvo ou enviado pelo app."); }
     }
     private void shareInvoice(JSONObject record) throws Exception {
+        if(!InvoiceStore.active(record))throw new IllegalArgumentException("Esse invoice foi removido dos totais. Restaure ou gere uma correção antes de enviar.");
+        if(invoices.needsReview(record))throw new IllegalArgumentException("Uma jornada mudou. Gere uma correção do invoice antes de enviar.");
         File file = new File(invoices.folder(), record.getString("filename"));
         Intent i = InvoiceShare.intent(file, record);
         startActivity(Intent.createChooser(i, "Enviar invoice · revise e envie no aplicativo escolhido"));
     }
     private void validateConfig(JSONObject p) throws Exception {
-        String[] keys = {"hourly", "tax", "consumption", "fuelPrice", "tyres", "maintenance", "depreciation"};
-        double[] max = {10000, 100, 100, 1000, 1000, 1000, 1000};
-        for (int i = 0; i < keys.length; i++) if (!CostEngine.valid(p.getDouble(keys[i]), max[i]))
-            throw new IllegalArgumentException("Valor inválido: " + keys[i]);
-        if (p.getDouble("hourly") <= 0 || p.getDouble("consumption") <= 0) throw new IllegalArgumentException("Hora e consumo devem ser maiores que zero.");
-        if (!Arrays.asList("AUD", "USD", "BRL", "EUR", "NZD", "CAD").contains(p.getString("currency")))
-            throw new IllegalArgumentException("Moeda inválida.");
+        Store.validateConfig(p);
     }
     protected void onActivityResult(int request, int result, Intent data) {
         super.onActivityResult(request, result, data);
         if (request == 30) {
             if (getPackageManager().canRequestPackageInstalls()) {
                 try { installUpdate(); } catch (Exception e) { message("Não foi possível abrir o instalador. Toque em Instalar atualização para tentar novamente."); }
-            } else message("Quando quiser continuar, permita instalações do Neon Shift e toque em Instalar atualização.");
+            } else message("Quando quiser continuar, permita instalações do Menatwork e toque em Instalar atualização.");
             return;
         }
         if (request == 21 && result == RESULT_OK && data != null && data.getData() != null && pendingPdf != null) {
@@ -301,7 +335,8 @@ public class MainActivity extends Activity {
             SimpleDateFormat date = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.ROOT);
             for (int n = 0; n < h.length(); n++) {
                 JSONObject s = h.getJSONObject(n), t = s.getJSONObject("totals"), c = s.getJSONObject("config");
-                csv.append(date.format(new Date(s.getLong("startedAt")))).append(';').append(c.optString("currency")).append(';');
+                if(s.optBoolean("deleted"))continue;
+                csv.append("hours".equals(s.optString("entryMode"))?Store.date(s):date.format(new Date(s.getLong("startedAt")))).append(';').append(c.optString("currency")).append(';');
                 csv.append(String.format(Locale.ROOT, "%.4f;%.3f", s.optLong("workedMs") / 3600000.0, s.optDouble("km")));
                 for (String k : new String[]{"gross", "tax", "fuel", "tyres", "maintenance", "depreciation", "extras", "net"})
                     csv.append(';').append(String.format(Locale.ROOT, "%.2f", t.optDouble(k)));

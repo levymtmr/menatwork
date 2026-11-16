@@ -28,7 +28,7 @@
     document.querySelector('main').scrollTo({top:0,behavior:'instant'});
     refresh();
   }
-  window.goHome=()=>{if(currentPage==='today')return false;switchPage('today');return true;};
+  window.goHome=()=>{if(window.JournalUI?.back())return true;if(currentPage==='today')return false;switchPage('today');return true;};
   document.querySelectorAll('nav button').forEach(el=>el.addEventListener('click',()=>switchPage(el.dataset.page)));
   function button(text,action,cls='primary') {const b=safeText('button',text,'button '+cls);b.type='button';b.onclick=()=>command(action);return b;}
   let actionsPhase='';
@@ -50,6 +50,7 @@
     }else if(phase==='return'){
       box.append(button('■ CHEGUEI · SALVAR JORNADA','finish'));
     }
+    if(phase!=='idle'){const fix=button('CORRIGIR HORÁRIOS / ENCERRAR','noop','subtle');fix.onclick=()=>window.JournalUI.open(state.session,true);box.append(fix,button('DESCARTAR JORNADA ATUAL','discardActive','subtle'));}
   }
   function renderRows(t,cfg) {
     const rows=[['↗','Ganho bruto',t.gross,true],['%','Imposto estimado · '+cfg.tax+'%',t.tax],['▤','Gasolina',t.fuel],['◉','Pneus',t.tyres],['⚒','Manutenção',t.maintenance],['↘','Depreciação',t.depreciation],['＋','Pedágio e outros',t.extras]];
@@ -64,27 +65,6 @@
     const form=$('settingsForm');
     for(const [key,value]of Object.entries(state.config)){if(form.elements.namedItem(key))form.elements.namedItem(key).value=String(value).replace('.',',');}
   }
-  function renderHistory() {
-    const signature=JSON.stringify([state.history,state.invoices]);
-    if(historySignature===signature)return;
-    historySignature=signature;
-    const list=$('historyList');list.replaceChildren();
-    if(!state.history.length){const empty=safeText('div','','empty');empty.append(safeText('div','▥','symbol'),safeText('p','Sua próxima conquista começa hoje.'),safeText('p','Jornadas encerradas aparecem aqui.'));list.append(empty);$('export').disabled=true;return;}
-    $('export').disabled=false;
-    for(const s of state.history){
-      const card=safeText('article','','panel history-card'),top=safeText('div','','history-top');
-      top.append(safeText('h3',new Date(s.startedAt).toLocaleDateString('pt-BR',{day:'2-digit',month:'short',year:'numeric'})),safeText('span',s.config.currency,'tag'));
-      card.append(top,safeText('p',money(s.totals.net),'history-net'+(s.totals.net<0?' negative':'')));
-      card.append(safeText('p',time(s.workedMs)+' de trabalho · '+s.km.toLocaleString('pt-BR',{maximumFractionDigits:2})+' km','muted'));
-      const details=document.createElement('details');details.className='history-details';details.append(safeText('summary','Ver custos e valores'));
-      for(const [label,key] of [['Ganho bruto','gross'],['Imposto estimado','tax'],['Gasolina','fuel'],['Pneus','tyres'],['Manutenção','maintenance'],['Depreciação','depreciation'],['Extras','extras']])details.append(safeText('p',label+': '+money(s.totals[key])));
-      details.append(safeText('p','Hora: '+money(s.config.hourly)+' · Imposto: '+s.config.tax+'%'));
-      card.append(details);
-      if(s.worksite)card.append(safeText('p',s.worksite,'muted'));
-      if(s.workedMs>0){const add=safeText('button','＋ ADICIONAR AO INVOICE','button secondary invoice-from-history');add.onclick=()=>{window.InvoiceUI.addJourney(s);switchPage('invoices');};card.append(add);}
-      list.append(card);
-    }
-  }
   function refresh() {
     state=read();
     const s=state.session,t=state.totals,cfg=s.config||state.config,phase=s.phase||'idle';
@@ -97,11 +77,11 @@
     const notes={idle:'Comece pelo trajeto ou inicie direto no trabalho.',commute:'Registrando ida. Toque em “Cheguei” quando começar a trabalhar.',work:'Jornada ativa. Seu ganho acompanha o tempo, mesmo com a tela apagada.',pause:'Pausa ativa. O tempo pago está parado.',return:'Trabalho finalizado. Registrando o custo da volta.'};
     $('phaseNote').textContent=notes[phase];
     const daily={};
-    const dateKey=ts=>new Date(ts).toLocaleDateString('en-CA');
-    for(const record of state.history){if(dateKey(record.startedAt)===dateKey(state.now))daily[record.config.currency]=(daily[record.config.currency]||0)+record.totals.net;}
-    if(phase!=='idle'&&dateKey(s.startedAt)===dateKey(state.now))daily[cfg.currency]=(daily[cfg.currency]||0)+t.net;
+    const dateKey=ts=>{const d=new Date(ts);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
+    for(const record of state.history){if(!record.deleted&&(record.workDate||dateKey(record.startedAt))===dateKey(state.now))daily[record.config.currency]=(daily[record.config.currency]||0)+record.totals.net;}
+    if(phase!=='idle'&&(s.workDate||dateKey(s.startedAt))===dateKey(state.now))daily[cfg.currency]=(daily[cfg.currency]||0)+t.net;
     const summary=$('dailySummary');summary.classList.toggle('hidden',!Object.keys(daily).length);
-    summary.replaceChildren(safeText('span','ACUMULADO HOJE','tiny'),...Object.entries(daily).map(([currency,value])=>safeText('strong',currency+' '+money(value))),safeText('small','Por data de início · inclui jornada atual'));
+    summary.replaceChildren(safeText('span','ACUMULADO HOJE','tiny'),...Object.entries(daily).map(([currency,value])=>safeText('strong',currency+' '+money(value))),safeText('small','Por dia de trabalho · inclui jornada atual'));
     $('recovery').classList.toggle('hidden',phase==='idle'||state.serviceRunning);
     renderRows(t,cfg);renderActions(phase);
     $('distance').replaceChildren(document.createTextNode((s.km||0).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+' '),safeText('small','km'));
@@ -114,7 +94,7 @@
     $('routeDestination').textContent=phase==='return'?'Destino de volta':'Trabalho';
     $('editCosts').disabled=phase==='idle';
     if(!settingsDirty)fillSettings();
-    if(currentPage==='history')renderHistory();
+    window.JournalUI.render(state);window.SkillsUI.render(state);
     if(window.InvoiceUI)window.InvoiceUI.render(state);
     if(window.AppUpdateUI)window.AppUpdateUI.render(state.update);
   }
@@ -135,5 +115,6 @@
     $('settingsError').textContent='';command('saveConfig',p);settingsDirty=false;
   };
   $('recover').onclick=()=>command('recover');$('export').onclick=()=>command('export');$('appSettings').onclick=()=>command('appSettings');
+  window.App={state:()=>state,go:switchPage,refresh,toast,command};
   refresh();setInterval(()=>{if(!document.hidden)refresh();},1000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();});
 })();

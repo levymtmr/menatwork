@@ -8,4 +8,4 @@ NOTES="${1:-RELEASE_NOTES.md}"
 python3 scripts/prepare-release.py --notes-file "$NOTES"
 gh release create "v$VERSION_NAME" "dist/neon-shift-$VERSION_NAME.apk" \
     "dist/neon-shift-$VERSION_NAME.apk.sha256" dist/update.json \
-    --repo levymtmr/menatwork --verify-tag --title "Neon Shift $VERSION_NAME" --notes-file "$NOTES"
+    --repo levymtmr/menatwork --verify-tag --title "Menatwork $VERSION_NAME" --notes-file "$NOTES"

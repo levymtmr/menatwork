@@ -1,26 +1,34 @@
-# Neon Shift 1.3.0
+# Menatwork 1.4.0
 
 Aplicativo Android pessoal, em português, para acompanhar o ganho líquido estimado de uma jornada de trabalho. Interface de terminal retrofuturista inspirada no Pip-Boy: fósforo verde, linhas sutis de CRT, painéis monocromáticos e trabalhador animado. Ilustrações originais desenhadas em canvas.
 
 ## Instalar
 
-O instalador fica em `dist/neon-shift-1.3.0.apk`. Veja `INSTALAR.md`.
+O instalador fica em `dist/neon-shift-1.4.0.apk`. Veja `INSTALAR.md`.
 
 Compatível com Android 8.0 ou superior, incluindo o Galaxy S22 Ultra. O APK usa apenas Java e APIs do Android, sem bibliotecas nativas, conta no aplicativo ou servidor de registros. O GitHub hospeda as atualizações públicas. A interface é local em WebView; o GPS, a persistência e o acompanhamento em segundo plano são nativos.
 
-## Interface 1.3.0
+## Jornadas, invoices e habilidades (1.4.0)
 
-O painel, histórico, invoices e ajustes agora usam uma tela monocromática verde, fontes de terminal, contornos de instrumentos e efeito leve de CRT. O mascote original martela durante o trabalho e para na pausa. O mapa ilustrativo também foi redesenhado. Os controles da jornada ficam antes do extrato financeiro, e a barra de navegação continua fora da área rolável e acima das barras do Android.
+- **Histórico → Adicionar dia de trabalho** registra dias esquecidos. Informe horas pagas (8,5 ou 08:30) ou início/término com pausas e opção de terminar no dia seguinte. Datas futuras e horários de término futuros são recusados; cada lançamento aceita até 24 horas pagas.
+- **Editar** altera data, horas, custos, local, observações e habilidades. O registro é substituído, sem duplicar valores. O modo de horas totais não representa horários reais de entrada/saída.
+- **Hoje → Corrigir horários / encerrar** permite terminar um cronômetro esquecido usando o horário correto. **Descartar jornada atual** envia o registro para a lixeira.
+- Jornadas removidas saem do acumulado diário, resumo do histórico, CSV e XP. A lixeira permite restaurar. O histórico mantém IDs estáveis quando você altera uma data.
+- Invoices podem ser removidos dos totais e restaurados. Números usados continuam reservados e o PDF original é preservado. A restauração bloqueia cobrança duplicada de uma jornada já usada em outro invoice ativo.
+- **Corrigir / novo rascunho** cancela o invoice anterior localmente e cria um rascunho com novo número, horas e datas atualizadas. Jornadas removidas saem desse rascunho. Confira e emita o novo PDF. Um PDF já enviado ao cliente não é alterado ou retirado automaticamente.
+- Alterar data, horas ou local de uma jornada vinculada sinaliza o invoice para revisão e bloqueia seu compartilhamento pelo app. O rascunho tem **Atualizar jornadas vinculadas** para importar os ajustes e retirar jornadas removidas.
+- **Skills** permite criar, editar, remover e restaurar habilidades. Marque-as durante o turno ou no editor de um dia. São **100 XP por hora paga**, usando as horas reais, sem arredondamento do invoice, e **1.000 XP por nível**. Frações de XP são acumuladas em tempo antes de truncar para pontos inteiros. O XP geral conta o tempo uma vez; cada habilidade marcada recebe as mesmas horas. Remover uma habilidade não remove o trabalho nem o XP geral.
+- XP da jornada em andamento é provisório. Ao corrigir/remover/restaurar registros, a experiência é recalculada a partir dos dados válidos, sem bônus duplicados.
 
-Essa atualização visual não altera cálculos, registros, dados de invoice ou o modelo branco do PDF enviado ao cliente. A animação respeita a preferência do sistema de reduzir movimentos. O efeito de CRT é estático, sem cintilação.
+A interface verde inspirada em terminais retrofuturistas continua, com uma quinta aba e editor rolável com botão de salvar fixo. O modelo profissional branco do invoice permanece igual.
 
-Versão 1.3.0 / versionCode 4, assinada pela mesma chave. Usuários da versão 1.2.0 podem instalar por **Ajustes → Atualizar aplicativo**. Os registros existentes são preservados.
+Versão 1.4.0 / versionCode 5, assinada pela mesma chave. Instale por **Ajustes → Atualizar aplicativo**, preservando os dados. O nome visível agora é Menatwork. O pacote `com.neonshift.app`, preferências internas e nomes de APK `neon-shift-X.Y.Z.apk` foram mantidos para compatibilidade com as instalações e atualizadores anteriores.
 
 ## Atualizações e GitHub
 
 Repositório oficial: https://github.com/levymtmr/menatwork
 
-Baixe a primeira instalação/atualização pela página de Releases. Depois use **Ajustes → Atualizar aplicativo**. O app consulta `releases/latest/download/update.json`, compara o versionCode, baixa o APK via HTTPS e verifica tamanho, SHA-256, package ID, versão, compatibilidade e assinatura igual à instalada. O instalador do Android é aberto automaticamente ao terminar o download iniciado pelo botão. A autorização de instalar a partir do Neon Shift e a confirmação final são feitas pelo usuário nas telas do sistema. Não há instalação silenciosa nem consulta em segundo plano sem tocar no botão.
+Baixe a primeira instalação/atualização pela página de Releases. Depois use **Ajustes → Atualizar aplicativo**. O app consulta `releases/latest/download/update.json`, compara o versionCode, baixa o APK via HTTPS e verifica tamanho, SHA-256, package ID, versão, compatibilidade e assinatura igual à instalada. O instalador do Android é aberto automaticamente ao terminar o download iniciado pelo botão. A autorização de instalar a partir do Menatwork e a confirmação final são feitas pelo usuário nas telas do sistema. Não há instalação silenciosa nem consulta em segundo plano sem tocar no botão.
 
 O download não exige conta GitHub: o repositório e as Releases são públicos. A WebView da interface continua sem acesso à rede; somente o atualizador nativo faz essas consultas. Não são enviados registros, dados de invoice ou localização. Se houver falha de conexão, o botão permite tentar novamente. Um download já validado pode ser retomado na etapa de instalação após reabrir o app. Um download interrompido recomeça ao tentar novamente.
 
@@ -57,7 +65,7 @@ A tarifa da fatura é independente do painel de custos e deve ser conferida. Os 
 
 Os dados iniciais públicos são exemplos. Preencha prestador, cliente e banco dentro do aplicativo; perfis reais já salvos são preservados nas atualizações. A referência de numeração era 018, após o 017 no computador. Não há sincronização com o Invoice Deck: os números usados até a cópia são reservados, mas novas emissões feitas no computador não aparecem automaticamente no celular. Confira a numeração antes de emitir e altere o número se necessário. Essa cópia não modifica o banco de dados ou os PDFs do programa original.
 
-**Enviar ao cliente** abre o compartilhamento do Android com PDF anexado, destinatário, assunto e mensagem. Escolha seu app de e-mail, revise e envie nele. Não há envio automático, SMTP ou credenciais de e-mail no Neon Shift. Abrir o compartilhamento não marca o invoice como enviado. Não há cancelamento/edição de PDFs emitidos nesta versão; eles ficam preservados.
+**Enviar ao cliente** abre o compartilhamento do Android com PDF anexado, destinatário, assunto e mensagem. Escolha seu app de e-mail, revise e envie nele. Não há envio automático, SMTP ou credenciais de e-mail no Menatwork. Abrir o compartilhamento não marca o invoice como enviado. Os PDFs originais ficam preservados; use remoção local ou correção com novo número para ajustar o controle de cobrança.
 
 O rascunho salva meio segundo após mudanças. Ao emitir, os lançamentos são limpos e o número avança; prestador, cliente, pagamento e tarifa permanecem para o próximo documento. Novos lançamentos podem ser digitados manualmente ou adicionados pelo histórico.
 

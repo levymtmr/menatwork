@@ -46,7 +46,7 @@
     const phase=document.documentElement.dataset.phase||'idle',working=phase==='work';
     const swing=working&&!reduced?(Math.cos(seconds*5)+1)/2:.85;
     worker(swing,working);
-    label('NS / 03',16,62,green,10);label('FIELD UNIT',16,75,'#608e4b',7);
+    label('MW / 04',16,62,green,10);label('FIELD UNIT',16,75,'#608e4b',7);
     label('REGISTRO',325,50,'#608e4b',8);label('LOCAL',325,61,'#608e4b',8);
     const names={idle:'EM ESPERA',work:'EM SERVIÇO',pause:'EM PAUSA',commute:'EM TRAJETO',return:'RETORNO'};
     label(names[phase]||names.idle,16,128,green,8);

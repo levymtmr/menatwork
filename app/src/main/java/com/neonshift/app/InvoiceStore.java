@@ -20,6 +20,22 @@ final class InvoiceStore {
             while ((n = in.read(buf)) != -1) b.write(buf, 0, n);
             seed = new JSONObject(new String(b.toByteArray(), StandardCharsets.UTF_8));
         } catch (Exception e) { throw new IllegalStateException("Não foi possível carregar o perfil de invoice.", e); }
+        migrateLinks();
+    }
+    static boolean active(JSONObject record) { return !"cancelled".equals(record.optString("status","issued")); }
+    private void migrateLinks() {
+        if(prefs.getBoolean("sourceSnapshotsV1",false))return;
+        try {
+            Store journals=new Store(context);JSONArray records=records();JSONObject draft=draft();
+            for(int n=0;n<records.length();n++){
+                JSONObject r=records.getJSONObject(n),fingerprints=new JSONObject();JSONArray ids=r.optJSONArray("sourceIds");
+                if(ids!=null)for(int i=0;i<ids.length();i++){JSONObject source=journals.findJournal(ids.optString(i));if(source!=null)fingerprints.put(ids.optString(i),Store.fingerprint(source));}
+                r.put("sourceFingerprints",fingerprints);
+            }
+            JSONArray rows=draft.optJSONArray("rows");
+            if(rows!=null)for(int n=0;n<rows.length();n++){JSONObject row=rows.getJSONObject(n);JSONObject source=journals.findJournal(row.optString("sourceId"));if(source!=null)row.put("sourceFingerprint",Store.fingerprint(source));}
+            if(!prefs.edit().putString("records",records.toString()).putString("draft",draft.toString()).putBoolean("sourceSnapshotsV1",true).commit())throw new IOException();
+        } catch(Exception e){throw new IllegalStateException("Não foi possível preparar os vínculos dos invoices.");}
     }
     JSONArray records() {
         try { return new JSONArray(prefs.getString("records", "[]")); }
@@ -89,10 +105,16 @@ final class InvoiceStore {
         for (int n = 0; n < records.length(); n++) {
             JSONObject r = records.getJSONObject(n);
             if (r.getInt("number") == number) throw new IllegalArgumentException("Número já usado neste celular.");
+            if (!active(r)) continue;
             JSONArray sources = r.optJSONArray("sourceIds");
             if (sources != null) for (int i = 0; i < sources.length(); i++) for (InvoiceEngine.Item item : items)
                 if (!item.sourceId.isEmpty() && item.sourceId.equals(sources.getString(i)))
                     throw new IllegalArgumentException("Uma das jornadas já está no invoice " + InvoiceEngine.number(r.getInt("number")) + ".");
+        }
+        Store journals=new Store(context);
+        for(InvoiceEngine.Item item:items)if(!item.sourceId.isEmpty()){
+            JSONObject source=journals.findJournal(item.sourceId);
+            if(source==null||source.optBoolean("deleted"))throw new IllegalArgumentException("Uma jornada foi removida. Atualize os vínculos do rascunho antes de emitir.");
         }
     }
     File preview(JSONObject draft) throws Exception {
@@ -115,6 +137,7 @@ final class InvoiceStore {
         Map<String, String> profile = profile(draft);
         List<InvoiceEngine.Item> items = items(draft);
         available(number, items);
+        validateDraftSources(draft);
         LocalDate issued = today();
         String date = issued.toString();
         File out = new File(folder(), "invoice_" + InvoiceEngine.number(number) + "_" + date + ".pdf");
@@ -129,9 +152,13 @@ final class InvoiceStore {
             Store.put(record, "client", profile.get("client")); Store.put(record, "email", profile.get("client_email"));
             Store.put(record, "total", InvoiceEngine.total(items).toPlainString());
             Store.put(record, "filename", out.getName()); Store.put(record, "draft", draft);
+            Store.put(record, "status", "issued");
             JSONArray sources = new JSONArray();
+            JSONObject fingerprints=new JSONObject();Store journals=new Store(context);
             for (InvoiceEngine.Item i : items) if (!i.sourceId.isEmpty()) sources.put(i.sourceId);
+            for(InvoiceEngine.Item i:items)if(!i.sourceId.isEmpty()){JSONObject source=journals.findJournal(i.sourceId);if(source!=null)fingerprints.put(i.sourceId,Store.fingerprint(source));}
             Store.put(record, "sourceIds", sources);
+            Store.put(record, "sourceFingerprints", fingerprints);
             JSONArray all = new JSONArray(); all.put(record);
             JSONArray existing = records(); for (int i = 0; i < existing.length(); i++) all.put(existing.opt(i));
             JSONObject nextDraft = new JSONObject(draft.toString());
@@ -141,6 +168,73 @@ final class InvoiceStore {
             }
         } finally { temp.delete(); }
         return out;
+    }
+    void validateDraftSources(JSONObject draft) throws Exception {
+        Store journals=new Store(context);JSONArray rows=draft.getJSONArray("rows");
+        for(int n=0;n<rows.length();n++){
+            JSONObject row=rows.getJSONObject(n);String id=row.optString("sourceId");if(id.isEmpty())continue;
+            JSONObject source=journals.findJournal(id);
+            if(source==null||source.optBoolean("deleted"))throw new IllegalArgumentException("Uma jornada foi removida. Toque em Atualizar jornadas vinculadas.");
+            if(row.has("sourceFingerprint")&&!row.getString("sourceFingerprint").equals(Store.fingerprint(source)))
+                throw new IllegalArgumentException("Uma jornada foi editada. Atualize os vínculos do rascunho antes de emitir.");
+        }
+    }
+    private Map<String,JSONObject> journalIndex() {
+        JSONArray all=new Store(context).history();Map<String,JSONObject> index=new HashMap<>();
+        for(int n=0;n<all.length();n++){JSONObject r=all.optJSONObject(n);if(r!=null)index.put(Store.id(r),r);}return index;
+    }
+    boolean needsReview(JSONObject record) { return needsReview(record,journalIndex()); }
+    private boolean needsReview(JSONObject record,Map<String,JSONObject> journals) {
+        JSONArray ids=record.optJSONArray("sourceIds");JSONObject snapshots=record.optJSONObject("sourceFingerprints");
+        if(ids!=null)for(int n=0;n<ids.length();n++){
+            String id=ids.optString(n);JSONObject source=journals.get(id);
+            if(source==null||source.optBoolean("deleted")||snapshots!=null&&snapshots.has(id)&&!snapshots.optString(id).equals(Store.fingerprint(source)))return true;
+        }
+        return false;
+    }
+    JSONArray annotatedRecords() {
+        JSONArray all=records();Map<String,JSONObject> journals=journalIndex();for(int n=0;n<all.length();n++){JSONObject r=all.optJSONObject(n);if(r!=null)Store.put(r,"needsReview",active(r)&&needsReview(r,journals));}return all;
+    }
+    JSONObject refreshSources(JSONObject draft) throws Exception {
+        JSONObject out=new JSONObject(draft.toString());JSONArray rows=draft.getJSONArray("rows"),updated=new JSONArray();Store journals=new Store(context);
+        for(int n=0;n<rows.length();n++){
+            JSONObject row=new JSONObject(rows.getJSONObject(n).toString());String id=row.optString("sourceId");
+            if(!id.isEmpty()){
+                JSONObject source=journals.findJournal(id);if(source==null||source.optBoolean("deleted"))continue;
+                row.put("date",Store.date(source));row.put("hours",java.math.BigDecimal.valueOf(source.optLong("workedMs")).divide(new java.math.BigDecimal("3600000"),12,java.math.RoundingMode.HALF_UP).stripTrailingZeros().toPlainString());
+                if(!source.optString("worksite").trim().isEmpty())row.put("address",source.optString("worksite"));
+                row.put("sourceFingerprint",Store.fingerprint(source));
+            }
+            updated.put(row);
+        }
+        out.put("rows",updated);return out;
+    }
+    void cancel(String filename) throws Exception {
+        JSONArray all=records();boolean found=false;
+        for(int n=0;n<all.length();n++){JSONObject r=all.getJSONObject(n);if(r.getString("filename").equals(filename)){r.put("status","cancelled");r.put("removedAt",System.currentTimeMillis());found=true;}}
+        if(!found)throw new IllegalArgumentException("Invoice não encontrado.");
+        if(!prefs.edit().putString("records",all.toString()).commit())throw new IOException("Não foi possível remover o invoice dos totais.");
+    }
+    void restore(String filename) throws Exception {
+        JSONObject record=find(filename);
+        if(needsReview(record))throw new IllegalArgumentException("As jornadas desse invoice mudaram. Gere uma correção em vez de restaurar o PDF antigo.");
+        JSONArray all=records(),sources=record.optJSONArray("sourceIds");
+        for(int n=0;n<all.length();n++){
+            JSONObject other=all.getJSONObject(n);if(!active(other)||other.getString("filename").equals(filename))continue;
+            JSONArray claimed=other.optJSONArray("sourceIds");
+            if(sources!=null&&claimed!=null)for(int i=0;i<sources.length();i++)for(int j=0;j<claimed.length();j++)
+                if(sources.optString(i).equals(claimed.optString(j)))throw new IllegalArgumentException("Uma jornada já está em outro invoice ativo.");
+        }
+        for(int n=0;n<all.length();n++)if(all.getJSONObject(n).getString("filename").equals(filename))all.getJSONObject(n).put("status","issued");
+        if(!prefs.edit().putString("records",all.toString()).commit())throw new IOException("Não foi possível restaurar o invoice.");
+    }
+    void correct(String filename) throws Exception {
+        JSONObject old=find(filename),draft=refreshSources(old.getJSONObject("draft"));draft.put("number",nextNumber());
+        JSONArray all=records();
+        for(int n=0;n<all.length();n++)if(all.getJSONObject(n).getString("filename").equals(filename)){
+            all.getJSONObject(n).put("status","cancelled");all.getJSONObject(n).put("removedAt",System.currentTimeMillis());
+        }
+        if(!prefs.edit().putString("records",all.toString()).putString("draft",draft.toString()).commit())throw new IOException("Não foi possível preparar a correção.");
     }
     File folder() throws IOException {
         File folder = new File(context.getFilesDir(), "invoice-pdfs");

@@ -28,6 +28,9 @@ public class InvoiceSmoke extends Instrumentation {
             File[] stale = store.folder().listFiles();
             if (stale != null) for (File f : stale) f.delete();
             store.prefs.edit().clear().commit();
+            getTargetContext().getSharedPreferences("neonshift",0).edit().clear().commit();
+            JSONObject sourceFixture=new JSONObject().put("id","native-smoke").put("startedAt",1).put("workDate","2026-11-16").put("workedMs",28860000).put("worksite","16 East Pkwy, Fulham SA 5024");
+            getTargetContext().getSharedPreferences("neonshift",0).edit().putString("history",new JSONArray().put(sourceFixture).toString()).commit();
             JSONObject draft = store.draft();
             JSONObject profile = draft.getJSONObject("profile");
             profile.put("name", "Example Worker"); profile.put("client", "Example Client");
@@ -81,6 +84,7 @@ public class InvoiceSmoke extends Instrumentation {
             result.putString("stream", "FAIL: " + e + "\n");status = 0;
         } finally {
             store.prefs.edit().clear().commit();
+            getTargetContext().getSharedPreferences("neonshift",0).edit().clear().commit();
             try { File[] files = store.folder().listFiles(); if (files != null) for (File f : files) f.delete(); } catch (Exception ignored) { }
         }
         finish(status, result);

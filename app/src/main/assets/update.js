@@ -1,7 +1,7 @@
 'use strict';
 (() => {
   const $=id=>document.getElementById(id);
-  let latest={stage:'idle',currentVersion:'1.3.0',message:'Toque para procurar uma nova versão no GitHub.',progress:0};
+  let latest={stage:'idle',currentVersion:'1.4.0',message:'Toque para procurar uma nova versão no GitHub.',progress:0};
   let requested=false;
   function command(action){
     if(typeof Android==='undefined'){$('updateMessage').textContent='Instale o APK para verificar e instalar atualizações.';return;}
@@ -10,7 +10,7 @@
   window.AppUpdateUI={render(update){
     if(update)latest=update;
     $('updateVersion').textContent=latest.currentVersion;
-    $('appVersionLabel').textContent='NEON SHIFT / '+latest.currentVersion;
+    $('appVersionLabel').textContent='MENATWORK / '+latest.currentVersion;
     $('updateMessage').textContent=latest.message;
     const busy=latest.stage==='checking'||latest.stage==='downloading';
     $('updateButton').disabled=busy;

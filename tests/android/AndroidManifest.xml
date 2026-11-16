@@ -3,4 +3,5 @@
     <application android:label="Neon Shift local tests" />
     <instrumentation android:name="com.neonshift.app.InvoiceSmoke" android:targetPackage="com.neonshift.app" />
     <instrumentation android:name="com.neonshift.app.UpdateSmoke" android:targetPackage="com.neonshift.app" />
+    <instrumentation android:name="com.neonshift.app.ManagementSmoke" android:targetPackage="com.neonshift.app" />
 </manifest>

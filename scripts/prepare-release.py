@@ -24,11 +24,11 @@ verified = subprocess.check_output([str(tools / 'apksigner'), 'verify', '--print
 fingerprint = re.search(r'Signer #1 certificate SHA-256 digest: ([a-f0-9]+)', verified)
 expected = (ROOT / 'release-signing-cert.sha256').read_text().strip()
 if not fingerprint or fingerprint.group(1) != expected:
-    raise SystemExit('Refused: APK is not signed by the original Neon Shift key. Keep the private key local.')
+    raise SystemExit('Refused: APK is not signed by the original Menatwork key. Keep the private key local.')
 badging = subprocess.check_output([str(tools / 'aapt2'), 'dump', 'badging', str(apk)], text=True)
 if not re.search(r"name='com\.neonshift\.app' versionCode='" + str(code) + r"' versionName='" + re.escape(name) + "'", badging):
     raise SystemExit('APK package/version does not match version.properties')
-notes = args.notes_file.read_text() if args.notes_file else 'Melhorias e correções no Neon Shift.'
+notes = args.notes_file.read_text() if args.notes_file else 'Melhorias e correções no Menatwork.'
 manifest = {
     'schemaVersion': 1, 'applicationId': 'com.neonshift.app',
     'versionCode': code, 'versionName': name, 'minSdk': 26,

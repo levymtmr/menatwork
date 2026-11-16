@@ -161,7 +161,7 @@ final class AppUpdater {
         if (next == null || !context.getPackageName().equals(next.packageName) || code(next) != expected.versionCode ||
             !expected.newerThan(code(installed)) || !expected.versionName.equals(next.versionName) ||
             next.applicationInfo == null || next.applicationInfo.minSdkVersion > Build.VERSION.SDK_INT)
-            throw new IOException("O arquivo não é uma atualização compatível do Neon Shift.");
+            throw new IOException("O arquivo não é uma atualização compatível do Menatwork.");
         Set<String> trusted = signers(installed);
         if (trusted.isEmpty() || !trusted.equals(signers(next))) throw new IOException("A assinatura do APK não corresponde ao aplicativo instalado.");
     }

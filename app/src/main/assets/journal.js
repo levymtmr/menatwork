@@ -1,0 +1,42 @@
+'use strict';
+(() => {
+ const $=id=>document.getElementById(id), el=(tag,text,cls)=>{const e=document.createElement(tag);e.textContent=text;if(cls)e.className=cls;return e;};
+ const day=t=>{const d=new Date(t);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
+ const money=n=>(n<0?'− ':'')+'$ '+Math.abs(n||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+ const hrs=ms=>(Number(ms||0)/3600000).toLocaleString('pt-BR',{maximumFractionDigits:4})+' h';
+ let state,record,active=false,busy=false,signature='',requestId,previousFocus;
+ function action(label,fn,cls='secondary'){const b=el('button',label,'button '+cls);b.type='button';b.onclick=fn;return b;}
+ function choices(target,selected){target.replaceChildren();for(const s of state.skills||[]){if(s.deleted&&!selected.includes(s.id))continue;const l=el('label',s.name+(s.deleted?' (removida)':''),'check-choice'),c=document.createElement('input');c.type='checkbox';c.value=s.id;c.checked=selected.includes(s.id);l.prepend(c);target.append(l);}if(!target.children.length)target.append(el('p','Crie habilidades na aba Skills.','help'));}
+ function close(){if(busy)return;const sheet=$('journalEditor');sheet.classList.add('hidden');document.querySelectorAll('.app > header,.app > main,.app > nav').forEach(e=>e.inert=false);previousFocus?.focus();}
+ function open(r=null,isActive=false){
+  state=window.App.state();record=r;active=isActive;busy=false;requestId=Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);previousFocus=document.activeElement;
+  const cfg=r?.config||state.config, now=state.now||Date.now(), clock=t=>new Date(t).toTimeString().slice(0,5);
+  $('journalTitle').textContent=active?'CORRIGIR E ENCERRAR':r?'EDITAR JORNADA':'ADICIONAR DIA';
+  $('journalHint').textContent=active?'Informe o término correto. A jornada será encerrada com essas horas.':'O registro recalcula seus valores e XP. Invoices emitidos que usam este dia serão sinalizados para revisão.';
+  const values={date:r?.workDate||day(r?.startedAt||now),mode:r?.entryMode||'hours',hours:((isActive?state.totals.workedMs:r?.workedMs||0)/3600000).toFixed(10).replace(/\.?0+$/,'')||'0',start:r?.startTime||clock(r?.workStartedAt||r?.startedAt||now),end:r?.endTime||clock(r?.endedAt||now),break:r?.breakMinutes||0,worksite:r?.worksite||'',km:r?.km||0,extras:r?.extras||0,notes:r?.notes||'',...cfg};
+  for(const [k,v] of Object.entries(values)){const field=$('j-'+k);if(field)field.value=v;}
+  $('j-date').max=day(now);$('j-nextDay').checked=!!r?.nextDay;choices($('journalSkillChoices'),r?.skillIds||[]);$('journalError').textContent='';$('saveJournal').disabled=false;
+  document.querySelectorAll('.app > header,.app > main,.app > nav').forEach(e=>e.inert=true);$('journalEditor').classList.remove('hidden');$('journalForm').scrollTop=0;mode();$('j-date').focus();
+ }
+ function number(s){const n=String(s).trim().replace(',','.');if(!/^(?:\d+(?:\.\d*)?|\.\d+)$/.test(n))throw Error('Preencha os valores numéricos com vírgula ou ponto.');return Number(n);}
+ function payload(){const config={currency:$('j-currency').value};for(const k of ['hourly','tax','consumption','fuelPrice','tyres','maintenance','depreciation'])config[k]=number($('j-'+k).value);return {id:record?String(record.id||record.startedAt):'',requestId,finishActive:active,workDate:$('j-date').value,entryMode:$('j-mode').value,hours:$('j-hours').value,startTime:$('j-start').value,endTime:$('j-end').value,nextDay:$('j-nextDay').checked,breakMinutes:$('j-break').value,km:number($('j-km').value),extras:number($('j-extras').value),worksite:$('j-worksite').value.trim(),notes:$('j-notes').value.trim(),config,skillIds:[...$('journalSkillChoices').querySelectorAll('input:checked')].map(c=>c.value)};}
+ function mode(){const times=$('j-mode').value==='times';$('journalHoursMode').classList.toggle('hidden',times);$('journalTimesMode').classList.toggle('hidden',!times);$('j-hours').required=!times;$('j-start').required=times;$('j-end').required=times;duration();}
+ function duration(){try{let hours;if($('j-mode').value==='hours'){const s=$('j-hours').value.trim();hours=/^\d{1,2}:[0-5]\d$/.test(s)?Number(s.split(':')[0])+Number(s.split(':')[1])/60:number(s);}else{const minutes=s=>{const [h,m]=s.split(':').map(Number);return h*60+m;};hours=(minutes($('j-end').value)-minutes($('j-start').value)+($('j-nextDay').checked?1440:0)-number($('j-break').value))/60;}$('journalDuration').textContent=hours>=0&&hours<=24?hours.toLocaleString('pt-BR',{maximumFractionDigits:4})+' horas pagas · '+Math.floor(hours*100)+' XP':'Confira o tempo: de 0 a 24 horas pagas.';}catch(e){$('journalDuration').textContent='Preencha o tempo trabalhado.';}}
+ function renderHistory(){const sig=JSON.stringify([state.history,state.invoices,state.skills]);if(sig===signature)return;signature=sig;const rows=state.history||[],valid=rows.filter(r=>!r.deleted),trash=rows.filter(r=>r.deleted),totals={};let ms=0;
+  for(const r of valid){ms+=r.workedMs;totals[r.config.currency]=(totals[r.config.currency]||0)+r.totals.net;}
+  $('historyTotals').textContent=valid.length+' jornadas · '+hrs(ms)+' · '+Object.entries(totals).map(([c,v])=>c+' '+money(v)).join(' / ');$('export').disabled=!valid.length;
+  $('journalTrash').classList.toggle('hidden',!trash.length);$('journalTrashCount').textContent=trash.length;
+  for(const [list,data] of [[$('historyList'),valid],[$('journalTrashList'),trash]]){list.replaceChildren();if(!data.length)list.append(el('p','Nenhum registro. Adicione um dia ou inicie uma jornada.','empty'));for(const r of [...data].sort((a,b)=>(b.workDate||day(b.startedAt)).localeCompare(a.workDate||day(a.startedAt))||b.startedAt-a.startedAt)){
+   const card=el('article','','panel history-card'),top=el('div','','history-top');top.append(el('h3',new Date((r.workDate||day(r.startedAt))+'T12:00:00').toLocaleDateString('pt-BR')),el('span',r.config.currency,'tag'));card.append(top,el('p',money(r.totals.net),'history-net'),el('p',hrs(r.workedMs)+' · '+Number(r.km||0).toLocaleString('pt-BR')+' km','muted'));
+   if(r.worksite)card.append(el('p',r.worksite,'muted'));if(r.notes)card.append(el('p',r.notes,'record-notes'));
+   const names=(r.skillIds||[]).map(id=>(state.skills||[]).find(s=>s.id===id)?.name).filter(Boolean);if(names.length)card.append(el('p','SKILLS: '+names.join(' · '),'tiny'));
+   const detail=el('details','','history-details');detail.append(el('summary','Ver custos e valores'));for(const [label,key] of [['Bruto','gross'],['Imposto estimado','tax'],['Gasolina','fuel'],['Pneus','tyres'],['Manutenção','maintenance'],['Depreciação','depreciation'],['Extras','extras']])detail.append(el('p',label+': '+money(r.totals[key])));detail.append(el('p','Hora: '+money(r.config.hourly)+' · Imposto: '+r.config.tax+'%'));card.append(detail);
+   const links=(state.invoices||[]).filter(i=>i.status!=='cancelled'&&(i.sourceIds||[]).includes(String(r.id||r.startedAt)));for(const i of links)card.append(el('p','INVOICE #'+i.number+(i.needsReview?' · PRECISA DE REVISÃO':''),'help'));
+   const buttons=el('div','','record-actions');if(r.deleted)buttons.append(action('RESTAURAR',()=>window.App.command('restoreJournal',{id:String(r.id||r.startedAt)})));else{buttons.append(action('EDITAR',()=>open(r)),action('REMOVER',()=>window.App.command('removeJournal',{id:String(r.id||r.startedAt)}),'subtle'));if(r.workedMs>0)buttons.append(action('＋ ADICIONAR AO INVOICE',()=>{window.InvoiceUI.addJourney(r);window.App.go('invoices');}));}card.append(buttons);list.append(card);
+  }}
+ }
+ $('newJournal').onclick=()=>open();$('closeJournal').onclick=close;$('j-mode').onchange=mode;$('journalForm').oninput=duration;
+ $('journalForm').onsubmit=e=>{e.preventDefault();try{const p=payload();busy=true;$('saveJournal').disabled=true;$('journalError').textContent='';window.App.command('saveJournal',p);if(typeof Android==='undefined'){busy=false;$('saveJournal').disabled=false;}}catch(err){window.journalError(err.message);}};
+ window.journalSaved=()=>{busy=false;close();window.App.refresh();};window.journalCancelled=()=>{busy=false;$('saveJournal').disabled=false;};window.journalError=message=>{busy=false;$('saveJournal').disabled=false;$('journalError').textContent=message;};
+ window.JournalUI={render(s){state=s;renderHistory();},open,close,back(){if($('journalEditor').classList.contains('hidden'))return false;close();return true;}};
+})();

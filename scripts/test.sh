@@ -16,3 +16,5 @@ PY
 "$JAVA_HOME/bin/java" -cp build/tests InvoiceTest build/tests/invoice-profile.properties
 "$JAVA_HOME/bin/javac" -encoding UTF-8 -d build/tests app/src/main/java/com/neonshift/app/UpdatePolicy.java tests/UpdatePolicyTest.java
 "$JAVA_HOME/bin/java" -cp build/tests UpdatePolicyTest
+"$JAVA_HOME/bin/javac" -encoding UTF-8 -cp build/tests -d build/tests app/src/main/java/com/neonshift/app/JournalEngine.java app/src/main/java/com/neonshift/app/Progression.java tests/JournalTest.java
+"$JAVA_HOME/bin/java" -cp build/tests JournalTest
