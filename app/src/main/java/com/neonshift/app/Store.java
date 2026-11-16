@@ -20,6 +20,14 @@ final class Store {
     static void put(JSONObject j, String key, Object value) {
         try { j.put(key, value); } catch (Exception e) { throw new IllegalArgumentException(e); }
     }
+    String theme() {
+        String value=prefs.getString("theme","pipboy");
+        return Arrays.asList("pipboy","medieval","cyberpunk").contains(value)?value:"pipboy";
+    }
+    void saveTheme(String value) {
+        if(!Arrays.asList("pipboy","medieval","cyberpunk").contains(value))throw new IllegalArgumentException("Tema inválido.");
+        if(!prefs.edit().putString("theme",value).commit())throw new IllegalStateException("Não foi possível salvar o tema.");
+    }
     JSONObject config() {
         JSONObject j = obj(prefs.getString("config", "{}"));
         String[] keys = {"hourly", "tax", "consumption", "fuelPrice", "tyres", "maintenance", "depreciation"};

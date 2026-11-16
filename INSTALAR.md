@@ -2,7 +2,7 @@
 
 Se já usa a versão anterior, instale o novo APK por cima dela e escolha **Atualizar**. Não desinstale: assim seus registros e ajustes são preservados.
 
-1. Copie `neon-shift-1.4.0.apk` para o celular, por cabo USB ou outro meio de sua preferência.
+1. Copie `neon-shift-1.5.0.apk` para o celular, por cabo USB ou outro meio de sua preferência.
 2. Abra o APK pelo aplicativo **Meus Arquivos**. Se o Android pedir, permita instalar aplicativos dessa fonte e volte para concluir a instalação.
 3. Abra **Menatwork** e entre em **Ajustes**. Configure sua moeda, hora de trabalho, imposto estimado, consumo do carro, preço da gasolina e custos por km. Os valores iniciais são exemplos.
 4. Ao sair para trabalhar, toque em **Iniciar trajeto ao trabalho**. Permita localização precisa e notificações quando solicitado. O GPS funciona melhor ao ar livre.
@@ -49,3 +49,10 @@ Se esqueceu o cronômetro ligado, em **Hoje → Corrigir horários / encerrar** 
 Na aba **Invoice**, use **Remover** para tirar uma fatura dos totais ou **Corrigir / novo rascunho** para emitir uma substituta com número novo. Confira os lançamentos antes de emitir. O PDF anterior fica preservado; um documento já enviado ao cliente não muda automaticamente. Ao alterar uma jornada vinculada, o invoice é sinalizado para revisão.
 
 Na aba **Skills**, crie suas habilidades. Vincule-as ao turno ou a jornadas do histórico. Cada hora paga vale 100 XP e cada 1.000 XP sobe um nível. Ajustes e exclusões recalculam a experiência; o XP do turno atual é provisório até salvar.
+
+
+## Temas e pagamentos
+
+Em **Ajustes → Temas**, escolha Pip-Boy, Medieval ou Cyberpunk. A escolha fica salva automaticamente.
+
+O Histórico mostra se a jornada está no rascunho, em um invoice emitido ou paga. Remover a linha do rascunho ou cancelar o invoice remove seu vínculo. No invoice emitido, use **Marcar como pago**; suas jornadas também receberão a marca de pagamento. **Marcar como não pago** desfaz essa ação. O resumo mostra quanto foi pago e quanto falta receber.

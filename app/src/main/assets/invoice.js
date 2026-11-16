@@ -64,21 +64,23 @@
     return d;
   }
   function perform(action){error('');try{const draft=validDraft();clearTimeout(saveTimer);cmd(action,draft);}catch(e){error(e.message);}}
-  function recordButton(label,action,filename,cls='secondary'){const b=text('button',label,'button '+cls);b.onclick=()=>{clearTimeout(saveTimer);cmd(action,{filename});};return b;}
+  function recordButton(label,action,filename,cls='secondary',extra={}){const b=text('button',label,'button '+cls);b.onclick=()=>{clearTimeout(saveTimer);cmd(action,{filename,...extra});};return b;}
   function records(){
     const list=state.invoices||[],signature=JSON.stringify(list);if(signature===recordsSignature)return;recordsSignature=signature;
     const active=list.filter(r=>r.status!=='cancelled'),removed=list.filter(r=>r.status==='cancelled');
-    $('invoiceLedgerTotals').textContent=active.length+' invoices ativos · AUD '+cash(active.reduce((sum,r)=>sum+Math.round(Number(r.total)*100),0));
+    const total=items=>items.reduce((sum,r)=>sum+Math.round(Number(r.total)*100),0);$('invoiceLedgerTotals').textContent=active.length+' invoices · AUD '+cash(total(active))+'\nPagos: '+cash(total(active.filter(r=>r.paid)))+' · A receber: '+cash(total(active.filter(r=>!r.paid)));
     $('invoiceTrash').classList.toggle('hidden',!removed.length);$('invoiceTrashCount').textContent=removed.length;
     for(const [target,items] of [[$('invoiceRecords'),active],[$('invoiceTrashList'),removed]]){
       target.replaceChildren();if(!items.length)target.append(text('p','Nenhum invoice neste grupo.','empty'));
       for(const r of items){
         const cancelled=r.status==='cancelled',card=text('article','','panel history-card');card.append(text('h3','INVOICE #'+String(r.number).padStart(3,'0')),text('p',r.client,'muted'),text('p',cash(Math.round(Number(r.total)*100)),'history-net'),text('p','Emissão: '+r.issued+' · AUD','muted'));
+        if(!cancelled)card.append(text('p',r.paid?'✓ PAGO':'◷ AGUARDANDO PAGAMENTO','billing-badge '+(r.paid?'paid':'unpaid')));
         if(cancelled)card.append(text('p','CANCELADO · não entra no total. O PDF original e o número ficam preservados.','help'));
         if(r.needsReview)card.append(text('p','REVISÃO NECESSÁRIA: uma jornada vinculada mudou. Crie uma correção antes de enviar.','notice'));
         const actions=text('div','','invoice-record-actions');actions.append(recordButton('ABRIR PDF','viewInvoice',r.filename),recordButton('SALVAR CÓPIA','saveInvoicePdf',r.filename));
         if(cancelled)actions.append(recordButton('RESTAURAR','restoreInvoice',r.filename),recordButton('CRIAR CORREÇÃO','correctInvoice',r.filename));else{
           if(!r.needsReview)actions.append(recordButton('↗ ENVIAR AO CLIENTE','shareInvoice',r.filename,'primary send'));
+          actions.append(recordButton(r.paid?'MARCAR COMO NÃO PAGO':'✓ MARCAR COMO PAGO','setInvoicePaid',r.filename,'secondary payment-action',{paid:!r.paid}));
           actions.append(recordButton('CORRIGIR / NOVO RASCUNHO','correctInvoice',r.filename),recordButton('REMOVER','cancelInvoice',r.filename,'subtle'));
         }
         card.append(actions);target.append(card);

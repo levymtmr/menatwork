@@ -1,12 +1,22 @@
-# Menatwork 1.4.0
+# Menatwork 1.5.0
 
 Aplicativo Android pessoal, em português, para acompanhar o ganho líquido estimado de uma jornada de trabalho. Interface de terminal retrofuturista inspirada no Pip-Boy: fósforo verde, linhas sutis de CRT, painéis monocromáticos e trabalhador animado. Ilustrações originais desenhadas em canvas.
 
 ## Instalar
 
-O instalador fica em `dist/neon-shift-1.4.0.apk`. Veja `INSTALAR.md`.
+O instalador fica em `dist/neon-shift-1.5.0.apk`. Veja `INSTALAR.md`.
 
 Compatível com Android 8.0 ou superior, incluindo o Galaxy S22 Ultra. O APK usa apenas Java e APIs do Android, sem bibliotecas nativas, conta no aplicativo ou servidor de registros. O GitHub hospeda as atualizações públicas. A interface é local em WebView; o GPS, a persistência e o acompanhamento em segundo plano são nativos.
+
+## Temas e pagamentos (1.5.0)
+
+**Ajustes → Temas** alterna entre Pip-Boy, Medieval pixel art e Cyberpunk. Cada tema muda cores, painéis e a ilustração animada do trabalhador. A escolha é persistida separadamente dos valores de trabalho. O PDF permanece branco no padrão Invoice Deck. Telas e instruções foram compactadas para dar espaço aos controles e registros.
+
+O Histórico deriva as marcações dos vínculos atuais: **Adicionada ao rascunho**, **Adicionada · Invoice #…** e **Paga · Invoice #…**. Retirar a linha do rascunho ou cancelar o invoice remove a marcação correspondente. Corrigir um invoice transfere os vínculos para o novo rascunho, e uma jornada removida desse rascunho fica disponível para nova cobrança. Marcas não são gravadas nas jornadas; por isso acompanham as mudanças dos invoices sem ficar desatualizadas.
+
+Em **Invoice → Marcar como pago**, o pagamento é registrado manualmente no celular. **Marcar como não pago** desfaz a marcação. As jornadas de um invoice ativo pago também ficam marcadas como pagas. O resumo separa pagos e a receber; invoices cancelados ficam fora desses valores. Invoices que precisam de revisão devem ser corrigidos antes de marcar o pagamento. Marcar pagamento não altera XP, custos ou PDFs, não movimenta dinheiro e não envia mensagens ao cliente.
+
+Versão 1.5.0 / versionCode 6, com o mesmo pacote e certificado das instalações anteriores.
 
 ## Jornadas, invoices e habilidades (1.4.0)
 

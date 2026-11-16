@@ -66,7 +66,7 @@
     for(const [key,value]of Object.entries(state.config)){if(form.elements.namedItem(key))form.elements.namedItem(key).value=String(value).replace('.',',');}
   }
   function refresh() {
-    state=read();
+    state=read();window.ThemeUI.render(state.theme);
     const s=state.session,t=state.totals,cfg=s.config||state.config,phase=s.phase||'idle';
     document.documentElement.dataset.phase=phase;
     const names={idle:'PRONTO',commute:'EM TRAJETO',work:'TRABALHANDO',pause:'EM PAUSA',return:'VOLTANDO'};

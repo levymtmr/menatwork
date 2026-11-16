@@ -22,6 +22,7 @@ import java.util.*;
 
 public class MainActivity extends Activity {
     private WebView web;
+    private FrameLayout root;
     private Store store;
     private InvoiceStore invoices;
     private AppUpdater updater;
@@ -41,8 +42,9 @@ public class MainActivity extends Activity {
         web.setOverScrollMode(View.OVER_SCROLL_NEVER);
         // Resize a native parent, not WebView padding: its CSS viewport must end
         // above system navigation on both gesture and three-button navigation.
-        FrameLayout root = new FrameLayout(this);
+        root = new FrameLayout(this);
         root.setBackgroundColor(Color.rgb(8, 18, 10));
+        applyTheme();
         root.addView(web, new FrameLayout.LayoutParams(-1, -1));
         if (Build.VERSION.SDK_INT >= 30) getWindow().setDecorFitsSystemWindows(false);
         else getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE |
@@ -89,6 +91,12 @@ public class MainActivity extends Activity {
         root.requestApplyInsets();
         web.loadUrl("https://app.neonshift.local/");
     }
+    @SuppressWarnings("deprecation")
+    private void applyTheme() {
+        int color=Color.parseColor("medieval".equals(store.theme())?"#18130f":"cyberpunk".equals(store.theme())?"#090e20":"#08120a");
+        getWindow().setStatusBarColor(color);getWindow().setNavigationBarColor(color);
+        web.setBackgroundColor(color);root.setBackgroundColor(color);
+    }
     private void message(String s) { Toast.makeText(this, s, Toast.LENGTH_LONG).show(); }
     private void dispatch(String action) {
         boolean needsGps = "commute".equals(action) || "return".equals(action) ||
@@ -128,6 +136,7 @@ public class MainActivity extends Activity {
         @JavascriptInterface public String state() {
             JSONObject j = new JSONObject();
             JSONObject s = store.session();
+            Store.put(j, "theme", store.theme());
             Store.put(j, "session", s);
             Store.put(j, "config", store.config());
             Store.put(j, "totals", Store.totals(s, store.config()));
@@ -147,7 +156,9 @@ public class MainActivity extends Activity {
             runOnUiThread(() -> {
                 try {
                     JSONObject p = new JSONObject(payload);
-                    if ("saveJournal".equals(action)) {
+                    if ("saveTheme".equals(action)) {
+                        store.saveTheme(p.getString("theme"));applyTheme();
+                    } else if ("saveJournal".equals(action)) {
                         if(p.optBoolean("finishActive")) {
                             confirm("Salvar término corrigido?","O cronômetro será encerrado e o registro usará os horários/horas informados. Os totais e o XP serão recalculados.",()->{
                                 store.saveJournal(p);stopService(new Intent(MainActivity.this,ShiftService.class));callback("journalSaved");message("Jornada corrigida e encerrada.");
@@ -166,6 +177,9 @@ public class MainActivity extends Activity {
                     } else if ("assignActiveSkills".equals(action)) {
                         JSONObject s=store.session();if(!s.has("phase")||!Store.id(s).equals(p.getString("id")))throw new IllegalArgumentException("A jornada em andamento mudou.");
                         Store.put(s,"skillIds",store.validSkillIds(p.getJSONArray("skillIds")));store.save(s);message("Habilidades vinculadas ao turno.");
+                    } else if ("setInvoicePaid".equals(action)) {
+                        String filename=p.getString("filename");boolean paid=p.getBoolean("paid");
+                        confirm(paid?"Marcar invoice como pago?":"Remover marca de pagamento?",paid?"O invoice e suas jornadas vinculadas serão marcados como pagos.":"O invoice e suas jornadas voltarão a aparecer como não pagos.",()->{invoices.setPaid(filename,paid);message(paid?"Pagamento registrado.":"Marcação de pagamento removida.");});
                     } else if ("cancelInvoice".equals(action)||"restoreInvoice".equals(action)||"correctInvoice".equals(action)) {
                         String filename=p.getString("filename");
                         if("correctInvoice".equals(action))confirm("Preparar correção?","O invoice anterior sairá dos totais, mantendo seu número reservado. O rascunho atual será substituído pela correção, com as jornadas atualizadas. Um PDF já enviado ao cliente não muda automaticamente.",()->{invoices.correct(filename);callback("invoiceIssued");message("Correção preparada. Confira os lançamentos e emita o novo PDF.");});

@@ -209,6 +209,16 @@ final class InvoiceStore {
         }
         out.put("rows",updated);return out;
     }
+    void setPaid(String filename,boolean paid) throws Exception {
+        JSONObject record=find(filename);
+        if(!active(record))throw new IllegalArgumentException("Restaure o invoice antes de alterar o pagamento.");
+        if(paid&&needsReview(record))throw new IllegalArgumentException("Revise as jornadas alteradas antes de marcar como pago.");
+        JSONArray all=records();
+        for(int n=0;n<all.length();n++){JSONObject r=all.getJSONObject(n);if(r.getString("filename").equals(filename)){
+            r.put("paid",paid);if(paid)r.put("paidAt",System.currentTimeMillis());else r.remove("paidAt");
+        }}
+        if(!prefs.edit().putString("records",all.toString()).commit())throw new IOException("Não foi possível salvar o pagamento.");
+    }
     void cancel(String filename) throws Exception {
         JSONArray all=records();boolean found=false;
         for(int n=0;n<all.length();n++){JSONObject r=all.getJSONObject(n);if(r.getString("filename").equals(filename)){r.put("status","cancelled");r.put("removedAt",System.currentTimeMillis());found=true;}}

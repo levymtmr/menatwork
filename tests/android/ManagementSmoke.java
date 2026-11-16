@@ -16,6 +16,9 @@ public class ManagementSmoke extends Instrumentation {
   c.getSharedPreferences("neonshift",0).edit().clear().commit();c.getSharedPreferences("invoice_deck_mobile",0).edit().clear().commit();
   Store store=new Store(c);invoices=new InvoiceStore(c);final InvoiceStore inv=invoices;
   for(File f:invoices.folder().listFiles())f.delete();
+  check(store.theme().equals("pipboy"),"default theme");
+  for(String theme:new String[]{"medieval","cyberpunk","pipboy"}){store.saveTheme(theme);check(new Store(c).theme().equals(theme),"theme persistence "+theme);}
+  bad(()->store.saveTheme("unknown"),"invalid theme blocked");
   String date=LocalDate.now().minusDays(3).toString();
   store.saveSkill(new JSONObject().put("name","Cladding").put("description","Installation"));String skill=store.skills().getJSONObject(0).getString("id");
   JSONObject p=new JSONObject().put("requestId","fixture").put("workDate",date).put("entryMode","hours").put("hours","8").put("config",store.config()).put("km",10).put("extras",5).put("worksite","Example site").put("skillIds",new JSONArray().put(skill).put(skill));
@@ -27,9 +30,11 @@ public class ManagementSmoke extends Instrumentation {
   JSONObject draft=invoices.draft(),profile=draft.getJSONObject("profile");for(String k:new String[]{"name","client","bank","account_name","bsb","account"})profile.put(k,"Example");
   JSONObject row=new JSONObject().put("date",date).put("address","Example site").put("hours","6.5").put("sourceId",id).put("sourceFingerprint",Store.fingerprint(saved));draft.put("rows",new JSONArray().put(row));
   File file=invoices.issue(draft);byte[] bytes=java.nio.file.Files.readAllBytes(file.toPath());String filename=file.getName();
-  check(!invoices.needsReview(invoices.find(filename)),"new invoice current");int next=invoices.nextNumber();invoices.cancel(filename);check(!InvoiceStore.active(invoices.find(filename)),"cancelled excluded");check(invoices.nextNumber()==next,"cancelled number reserved");
+  check(!invoices.needsReview(invoices.find(filename)),"new invoice current");
+  invoices.setPaid(filename,true);check(new InvoiceStore(c).find(filename).getBoolean("paid"),"payment persists");check(invoices.find(filename).has("paidAt"),"payment date recorded");check(invoices.find(filename).getJSONArray("sourceIds").getString(0).equals(id),"paid links preserved");check(store.progress().getLong("xp")==650,"payment does not alter XP");
+  invoices.setPaid(filename,false);check(!invoices.find(filename).getBoolean("paid"),"payment reversible");check(!invoices.find(filename).has("paidAt"),"unpaid clears date");int next=invoices.nextNumber();invoices.cancel(filename);check(!InvoiceStore.active(invoices.find(filename)),"cancelled excluded");check(invoices.nextNumber()==next,"cancelled number reserved");bad(()->inv.setPaid(filename,true),"cancelled payment blocked");
   invoices.restore(filename);check(InvoiceStore.active(invoices.find(filename)),"restore invoice");
-  p.put("hours","7");saved=store.saveJournal(p);check(invoices.needsReview(invoices.find(filename)),"editing linked hours marks review");bad(()->inv.restore(filename),"stale invoice restore blocked");bad(()->inv.validateDraftSources(draft),"stale draft blocked");
+  p.put("hours","7");saved=store.saveJournal(p);check(invoices.needsReview(invoices.find(filename)),"editing linked hours marks review");bad(()->inv.restore(filename),"stale invoice restore blocked");bad(()->inv.setPaid(filename,true),"stale invoice payment blocked");bad(()->inv.validateDraftSources(draft),"stale draft blocked");
   invoices.correct(filename);check(!InvoiceStore.active(invoices.find(filename)),"correction cancels original");check(invoices.draft().getInt("number")==next,"correction gets new number");check(invoices.draft().getJSONArray("rows").getJSONObject(0).getString("hours").equals("7"),"correction refreshes hours");check(Arrays.equals(bytes,java.nio.file.Files.readAllBytes(file.toPath())),"original PDF immutable");
   File corrected=invoices.issue(invoices.draft());check(corrected.exists(),"corrected PDF issued");
   store.removeJournal(id,true);check(invoices.needsReview(invoices.find(corrected.getName())),"deleted source flags invoice");check(invoices.refreshSources(invoices.draft().put("rows",new JSONArray().put(row))).getJSONArray("rows").length()==0,"deleted source removed on refresh");store.removeJournal(id,false);

@@ -17,10 +17,12 @@ const path = require('node:path');
   });
   await page.addInitScript(()=>{
     const cfg={currency:'AUD',hourly:32,tax:15,consumption:8,fuelPrice:1.85,tyres:.025,maintenance:.05,depreciation:.1};
-    window.testState={session:{},config:cfg,history:[],skills:[],serviceRunning:false,now:Date.now()};
+    window.testState={theme:'pipboy',session:{},config:cfg,history:[],skills:[],serviceRunning:false,now:Date.now()};
     window.calls=[];
     function totals(s){const c=s.config||window.testState.config,ms=s.workedMs||0,km=s.km||0,gross=ms/3600000*c.hourly,tax=gross*c.tax/100,fuel=km*c.consumption/100*c.fuelPrice,tyres=km*c.tyres,maintenance=km*c.maintenance,depreciation=km*c.depreciation,extras=s.extras||0,carCosts=fuel+tyres+maintenance+depreciation+extras;return{gross,tax,fuel,tyres,maintenance,depreciation,extras,carCosts,net:gross-tax-carCosts,workedMs:ms};}
     window.Android={state(){if(!window.testState.invoiceDraft){window.testState.invoiceDraft={profile:{...window.invoiceDefaults.profile,name:'Example Worker',client:'Example Client',bank:'Example Bank',account_name:'Example Worker',bsb:'000-000',account:'00000000',client_email:'client@example.com'},number:18,rate:'32',rows:[]};window.testState.invoices=[];window.testState.nextInvoiceNumber=18;window.testState.invoiceToday='2026-11-16';window.testState.update={stage:'idle',message:'Ready',currentVersion:'1.2.0',progress:0};}const st=window.testState,ms=st.history.filter(r=>!r.deleted).reduce((n,r)=>n+r.workedMs,0),xp=Math.floor(ms/36000);st.progression={xp,level:Math.floor(xp/1000)+1,within:xp%1000,workedMs:ms,pendingXp:Math.floor((st.session.workedMs||0)/36000),skills:st.skills.map(skill=>{const work=skill.deleted?0:st.history.filter(r=>!r.deleted&&(r.skillIds||[]).includes(skill.id)).reduce((n,r)=>n+r.workedMs,0),x=Math.floor(work/36000);return {...skill,workedMs:work,xp:x,level:Math.floor(x/1000)+1,within:x%1000};})};return JSON.stringify({...st,totals:totals(st.session)});},command(action,raw){const p=JSON.parse(raw);window.calls.push({action,p});let s=window.testState.session;
+      if(action==='saveTheme')window.testState.theme=p.theme;
+      if(action==='setInvoicePaid')window.testState.invoices.find(r=>r.filename===p.filename).paid=p.paid;
       if(action==='saveSkill'){const old=window.testState.skills.find(x=>x.id===p.id);if(old)Object.assign(old,p);else window.testState.skills.push({...p,id:'skill-'+Date.now()});window.skillSaved();}
       if(action==='removeSkill'||action==='restoreSkill')window.testState.skills.find(x=>x.id===p.id).deleted=action==='removeSkill';
       if(action==='assignActiveSkills')s.skillIds=p.skillIds;
@@ -34,7 +36,7 @@ const path = require('node:path');
       if(action==='correctInvoice'){const record=window.testState.invoices.find(x=>x.filename===p.filename);record.status='cancelled';window.testState.invoiceDraft={...record.draft,number:window.testState.nextInvoiceNumber};window.invoiceIssued();}
       if(action==='refreshInvoiceSources'){window.testState.invoiceDraft=p;window.invoiceIssued();}
       if(action==='checkUpdate')window.testState.update={...window.testState.update,stage:'checking',message:'Checking'};
-      if(action==='saveInvoiceDraft')window.testState.invoiceDraft=p;
+      if(action==='saveInvoiceDraft'||action==='previewInvoice')window.testState.invoiceDraft=p;
       if(action==='issueInvoice'){
         const total=p.rows.reduce((sum,r)=>{if(r.address.toLowerCase()==='day off')return sum;const h=r.hours.includes(':')?Number(r.hours.split(':')[0])+Number(r.hours.split(':')[1])/60:Number(r.hours.replace(',','.'));return sum+Math.round(Math.ceil(h*4)/4*Number(p.rate)*100)/100;},0);
         window.testState.invoices.unshift({number:p.number,issued:'2026-11-16',client:p.profile.client,email:p.profile.client_email,total:String(total),filename:'invoice_018_2026-11-16.pdf',draft:p,sourceIds:p.rows.map(r=>r.sourceId).filter(Boolean)});
@@ -119,10 +121,15 @@ const path = require('node:path');
   assert(await page.evaluate(()=>window.calls.some(x=>x.action==='previewInvoice'&&x.p.rows.length===3)));
   assert.equal(await page.evaluate(()=>window.testState.invoices.length),0); // preview never issues
   await page.screenshot({path:'dist/tela-invoices.png',fullPage:true});
-  await page.locator('#invoiceIssue').click();
+  await page.locator('nav [data-page="history"]').click();await page.waitForFunction(()=>document.querySelector('#historyList').textContent.includes('ADICIONADA AO RASCUNHO'));
+  assert.equal(await page.locator('#historyList').getByRole('button',{name:'＋ ADICIONAR AO INVOICE',exact:true}).count(),0);
+  await page.locator('nav [data-page="invoices"]').click();await page.locator('#invoiceIssue').click();
   await page.waitForFunction(()=>document.querySelectorAll('#invoiceRecords article').length===1);
   assert.equal(await page.locator('.invoice-entry').count(),0); // emitted draft clears, PDF remains
   assert.equal(await page.locator('#invoiceNumber').inputValue(),'19');
+  await page.getByRole('button',{name:'✓ MARCAR COMO PAGO',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#invoiceRecords .billing-badge').textContent==='✓ PAGO');
+  await page.locator('nav [data-page="history"]').click();await page.waitForFunction(()=>document.querySelector('#historyList').textContent.includes('✓ PAGA'));assert.equal(await page.locator('#historyList').getByRole('button',{name:'＋ ADICIONAR AO INVOICE',exact:true}).count(),0);
+  await page.screenshot({path:'dist/jornada-paga.png'});await page.locator('nav [data-page="invoices"]').click();await page.getByRole('button',{name:'MARCAR COMO NÃO PAGO',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#invoiceRecords .billing-badge').textContent.includes('AGUARDANDO'));
   await page.getByRole('button',{name:'↗ ENVIAR AO CLIENTE',exact:true}).click();
   assert(await page.evaluate(()=>window.calls.some(x=>x.action==='shareInvoice'&&x.p.filename==='invoice_018_2026-11-16.pdf')));
   await page.getByRole('button',{name:'SALVAR CÓPIA',exact:true}).click();
@@ -175,7 +182,19 @@ const path = require('node:path');
   await page.locator('nav [data-page="invoices"]').click();await page.locator('#invoiceRecords').getByRole('button',{name:'REMOVER',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#invoiceTrashCount').textContent==='1');assert((await page.locator('#invoiceLedgerTotals').innerText()).includes('0 invoices'));
   await page.locator('#invoiceTrash > summary').click();await page.locator('#invoiceTrashList').getByRole('button',{name:'RESTAURAR',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#invoiceRecords').textContent.includes('INVOICE #018'));
   await page.locator('#invoiceRecords').getByRole('button',{name:'CORRIGIR / NOVO RASCUNHO',exact:true}).click();await page.waitForFunction(()=>document.querySelectorAll('.invoice-entry').length===3);
+  await page.locator('nav [data-page="history"]').click();await page.waitForFunction(()=>document.querySelector('#historyList').textContent.includes('ADICIONADA AO RASCUNHO'));
+  await page.locator('nav [data-page="invoices"]').click();await page.locator('.invoice-entry').first().getByRole('button',{name:'Remover lançamento',exact:true}).click();
+  await page.locator('nav [data-page="history"]').click();await page.waitForFunction(()=>!document.querySelector('#historyList').textContent.includes('ADICIONADA AO RASCUNHO'));
+  const financialBefore=await page.evaluate(()=>JSON.stringify([window.testState.config,window.testState.session,window.testState.history,window.testState.invoices]));
+  for(const theme of ['medieval','cyberpunk','pipboy']){
+    await page.locator('nav [data-page="settings"]').click();await page.locator(`[data-theme-choice="${theme}"]`).click();await page.waitForFunction(t=>window.testState.theme===t&&document.documentElement.dataset.theme===t,theme);
+    assert.equal(await page.locator(`[data-theme-choice="${theme}"]`).getAttribute('aria-pressed'),'true');
+    await page.screenshot({path:`dist/tema-${theme}-ajustes.png`});await page.locator('nav [data-page="today"]').click();await page.screenshot({path:`dist/tema-${theme}.png`});
+    for(const width of [320,412]){await page.setViewportSize({width,height:700});for(const section of ['today','history','skills','invoices','settings']){await page.locator(`nav [data-page="${section}"]`).click();assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`${theme}/${section}/${width}`);for(const b of await page.locator('nav button').all()){const r=await b.boundingBox();assert(r.y+r.height<=700);}}}
+    await page.setViewportSize({width:412,height:858});
+  }
+  assert.equal(await page.evaluate(()=>JSON.stringify([window.testState.config,window.testState.session,window.testState.history,window.testState.invoices])),financialBefore);
   assert.deepEqual(errors,[]);
-  console.log('PASS: work flows, invoice draft/rounding/preview/issue/share/save dispatch, journal management, skill XP, invoice cancellation/correction, 5 pages, 4 widths, 2 heights, and navigation bounds.');
+  console.log('PASS: work flows, invoice draft/rounding/preview/issue/share/save dispatch, journal management, skill XP, invoice cancellation/correction, billing markers, payments, three themes, 5 pages, 4 widths, 2 heights, and navigation bounds.');
   await browser.close();
 })().catch(e=>{console.error(e);process.exit(1);});
