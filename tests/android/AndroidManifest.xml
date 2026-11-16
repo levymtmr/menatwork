@@ -1,0 +1,5 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.neonshift.tests">
+    <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35" />
+    <application android:label="Neon Shift local tests" />
+    <instrumentation android:name="com.neonshift.app.InvoiceSmoke" android:targetPackage="com.neonshift.app" />
+</manifest>

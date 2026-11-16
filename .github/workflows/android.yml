@@ -1,0 +1,27 @@
+name: Android checks
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - uses: android-actions/setup-android@v3
+      - name: Install Android SDK
+        run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Test calculations, invoices and update policy
+        run: scripts/test.sh
+      - name: Compile smoke build with a temporary CI key
+        env:
+          NEON_SIGNING_KEY: ${{ runner.temp }}/neon-shift-ci.jks
+        run: scripts/build-apk.sh
+      # CI has no production signing key and does not publish installable updates.

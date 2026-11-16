@@ -1,0 +1,17 @@
+.gradle/
+local.properties
+build/
+app/build/
+.tools/
+*.keystore
+*.jks
+dist/*.apk
+dist/*.zip
+dist/*.png
+dist/*.sha256
+dist/VALIDACAO.txt
+dist/update.json
+*.apk
+*.apk.idsig
+*.pem
+*.p12

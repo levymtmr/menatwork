@@ -1,0 +1,40 @@
+# Instalar / atualizar no Samsung S22 Ultra
+
+Se já usa a versão anterior, instale o novo APK por cima dela e escolha **Atualizar**. Não desinstale: assim seus registros e ajustes são preservados.
+
+1. Copie `neon-shift-1.2.0.apk` para o celular, por cabo USB ou outro meio de sua preferência.
+2. Abra o APK pelo aplicativo **Meus Arquivos**. Se o Android pedir, permita instalar aplicativos dessa fonte e volte para concluir a instalação.
+3. Abra **Neon Shift** e entre em **Ajustes**. Configure sua moeda, hora de trabalho, imposto estimado, consumo do carro, preço da gasolina e custos por km. Os valores iniciais são exemplos.
+4. Ao sair para trabalhar, toque em **Iniciar trajeto ao trabalho**. Permita localização precisa e notificações quando solicitado. O GPS funciona melhor ao ar livre.
+5. Ao começar a trabalhar, toque em **Cheguei · iniciar trabalho**. O GPS da ida para; começa a contagem de horas pagas. Use **Pausar** para intervalos não remunerados.
+6. Para incluir a volta, toque em **Terminar trabalho e registrar volta**. O tempo pago para e o GPS volta a medir. Ao chegar, salve a jornada. Se não quiser registrar a volta, use **Encerrar** diretamente.
+7. Antes de salvar, confira **Ajustar km e gastos extras**. Você pode corrigir a distância e as horas pagas, e incluir pedágio, estacionamento ou outros gastos.
+
+O histórico fica apenas no celular. Use **Histórico → Exportar CSV** para guardar uma cópia dos registros finalizados. Desinstalar ou limpar dados apaga o histórico.
+
+Se o Samsung interromper o acompanhamento, abra as configurações do app pelo botão em **Ajustes** e confira as permissões e a opção de bateria **Sem restrições**. Após reiniciar ou forçar a parada, abra novamente o app e retome o acompanhamento. Confira e corrija as horas se necessário.
+
+O combustível é estimado pelo consumo e pelo preço que você informar. O GPS registra o caminho percorrido, sem consulta a mapas ou navegação por endereço. Faça o primeiro teste em um percurso conhecido para conferir as configurações e a distância.
+
+## Criar e enviar invoice
+
+1. Em **Histórico**, use **Adicionar ao invoice** em cada jornada que será cobrada. Ou adicione lançamentos manualmente na aba **Invoice**.
+2. Confira data, local da obra e horas de cada lançamento. Você pode registrar o local antecipadamente em **Hoje → Ajustar km e gastos extras**.
+3. Na aba **Invoice**, confira prestador, cliente, e-mail e pagamento. Instalações novas usam dados de exemplo. Preencha os dados reais no celular; os dados já salvos de versões anteriores são mantidos.
+4. Confira o número e a tarifa em AUD. A numeração e a tarifa do invoice são independentes do computador e dos ajustes do painel. O primeiro número sugerido na cópia é 018; se já usou esse número no computador, altere antes de emitir.
+5. O cálculo segue o programa original: cada lançamento sobe para o próximo bloco de 15 minutos. **08:01 a AUD 32/h = AUD 264,00**. Day off aparece com zero. Imposto e custos do carro não são descontados da cobrança.
+6. Use **Prévia PDF** para abrir em um leitor de PDF instalado. Depois, **Emitir e guardar PDF** registra o invoice e preserva o documento. O rascunho fica pronto para o próximo número.
+7. Em **Invoices emitidos**, toque em **Enviar ao cliente**, escolha o aplicativo de e-mail, confira o PDF anexado, destinatário e valores, e envie pelo aplicativo escolhido. Abrir o compartilhamento não envia automaticamente.
+8. Use **Salvar cópia** para guardar o PDF fora do aplicativo. Desinstalar ou limpar dados remove os PDFs privados. Não há sincronização com o programa do computador.
+
+## Atualizar pelo aplicativo
+
+Instale a versão 1.2.0 uma vez pelo APK publicado em https://github.com/levymtmr/menatwork/releases/latest . Depois:
+
+1. Abra **Ajustes → Atualizar aplicativo**.
+2. Se houver uma versão mais nova, o app baixa o APK oficial e verifica sua assinatura e integridade.
+3. Na primeira vez, o Android pode pedir para permitir instalações a partir do Neon Shift. Ative a permissão e volte ao aplicativo.
+4. Confirme **Atualizar** na tela do instalador do Android. Essa confirmação do sistema é necessária.
+5. Se cancelar, use **Instalar atualização** para abrir a etapa novamente. Se estiver sem internet, tente mais tarde.
+
+Atualizar preserva registros e invoices. Não desinstale a versão anterior. O botão consulta apenas as versões publicadas como Releases oficiais, não cada alteração de código no GitHub.
