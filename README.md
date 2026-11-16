@@ -6,7 +6,7 @@ Aplicativo Android pessoal, em português, para acompanhar o ganho líquido esti
 
 O instalador fica em `dist/neon-shift-1.2.0.apk`. Veja `INSTALAR.md`.
 
-Compatível com Android 8.0 ou superior, incluindo o Galaxy S22 Ultra. O APK usa apenas Java e APIs do Android, sem bibliotecas nativas, contas ou serviços externos. A interface é local em WebView; o GPS, a persistência e o acompanhamento em segundo plano são nativos.
+Compatível com Android 8.0 ou superior, incluindo o Galaxy S22 Ultra. O APK usa apenas Java e APIs do Android, sem bibliotecas nativas, conta no aplicativo ou servidor de registros. O GitHub hospeda as atualizações públicas. A interface é local em WebView; o GPS, a persistência e o acompanhamento em segundo plano são nativos.
 
 ## Atualização 1.2.0 e GitHub
 
@@ -117,7 +117,7 @@ Também há arquivos Gradle para abrir no Android Studio (AGP 8.9.2, JDK 17, Gra
 - Compilação real do APK e verificação criptográfica com ferramentas oficiais do Android.
 - APK instalado com sucesso no emulador Android 15. A conferência visual nativa ficou limitada por falhas do System UI e do renderer da WebView no emulador sem aceleração; os testes de layout e cliques da interface foram feitos em Chromium. Não houve teste em um S22 Ultra físico; os insets reais, GPS, notificações e políticas de bateria ainda precisam de verificação no aparelho.
 - Passaram 19 verificações nativas no Android 15: rascunho persistido, prévia sem emissão, PDF emitido, arredondamento, duplicatas, conteúdo/MIME do anexo, destinatário e provider somente leitura. Nenhum e-mail foi enviado.
-- `tests/android/InvoiceSmoke.java` e `scripts/build-device-tests.sh` fornecem verificação nativa do armazenamento, emissão, duplicatas, Intent de anexo e provider. Use somente em emulador descartável: o teste limpa os dados de invoice do dispositivo de teste. O APK de testes não faz parte do instalador entregue e não envia e-mail.
+- `tests/android/InvoiceSmoke.java` e `scripts/build-device-tests.sh` fornecem verificação nativa do armazenamento, emissão, duplicatas, Intent de anexo e provider. Use somente em emulador descartável: o teste limpa os dados de invoice do dispositivo de teste. Para os testes nativos, compile primeiro `scripts/build-update-fixtures.sh` e depois `scripts/build-device-tests.sh`. As fixtures de versão futura/chave incorreta ficam em `build/` e nunca devem ser publicadas como releases. O APK de testes não faz parte do instalador entregue e não envia e-mail.
 
 Para executar os testes de interface, instale Playwright e Chromium no ambiente de desenvolvimento e rode `node tests/ui.cjs`. Eles não substituem testes de GPS em um aparelho real.
 

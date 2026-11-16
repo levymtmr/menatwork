@@ -2,4 +2,5 @@
     <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35" />
     <application android:label="Neon Shift local tests" />
     <instrumentation android:name="com.neonshift.app.InvoiceSmoke" android:targetPackage="com.neonshift.app" />
+    <instrumentation android:name="com.neonshift.app.UpdateSmoke" android:targetPackage="com.neonshift.app" />
 </manifest>

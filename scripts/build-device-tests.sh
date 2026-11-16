@@ -8,8 +8,8 @@ OUT="$PWD/build/device-tests"
 TOOLS="$ANDROID_HOME/build-tools/35.0.0"
 PLATFORM="$ANDROID_HOME/platforms/android-35/android.jar"
 mkdir -p "$OUT/classes" "$OUT/dex"
-"$TOOLS/aapt2" link -o "$OUT/test-base.apk" -I "$PLATFORM" --manifest tests/android/AndroidManifest.xml
-javac -encoding UTF-8 -source 8 -target 8 -Xlint:-options -classpath "$PLATFORM:$PWD/build/manual/classes" -d "$OUT/classes" tests/android/InvoiceSmoke.java
+"$TOOLS/aapt2" link -o "$OUT/test-base.apk" -I "$PLATFORM" --manifest tests/android/AndroidManifest.xml -A "$PWD/build/update-fixtures/assets"
+javac -encoding UTF-8 -source 8 -target 8 -Xlint:-options -classpath "$PLATFORM:$PWD/build/manual/classes" -d "$OUT/classes" tests/android/*.java
 jar cf "$OUT/tests.jar" -C "$OUT/classes" .
 "$TOOLS/d8" --lib "$PLATFORM" --classpath "$PWD/build/manual/classes.jar" --min-api 26 --output "$OUT/dex" "$OUT/tests.jar"
 cp "$OUT/test-base.apk" "$OUT/test-unaligned.apk"
