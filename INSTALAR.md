@@ -2,7 +2,7 @@
 
 Se já usa a versão anterior, instale o novo APK por cima dela e escolha **Atualizar**. Não desinstale: assim seus registros e ajustes são preservados.
 
-1. Copie `neon-shift-1.2.0.apk` para o celular, por cabo USB ou outro meio de sua preferência.
+1. Copie `neon-shift-1.3.0.apk` para o celular, por cabo USB ou outro meio de sua preferência.
 2. Abra o APK pelo aplicativo **Meus Arquivos**. Se o Android pedir, permita instalar aplicativos dessa fonte e volte para concluir a instalação.
 3. Abra **Neon Shift** e entre em **Ajustes**. Configure sua moeda, hora de trabalho, imposto estimado, consumo do carro, preço da gasolina e custos por km. Os valores iniciais são exemplos.
 4. Ao sair para trabalhar, toque em **Iniciar trajeto ao trabalho**. Permita localização precisa e notificações quando solicitado. O GPS funciona melhor ao ar livre.
@@ -29,7 +29,7 @@ O combustível é estimado pelo consumo e pelo preço que você informar. O GPS 
 
 ## Atualizar pelo aplicativo
 
-Instale a versão 1.2.0 uma vez pelo APK publicado em https://github.com/levymtmr/menatwork/releases/latest . Depois:
+Se ainda não tiver o botão de atualização, instale a versão atual uma vez pelo APK publicado em https://github.com/levymtmr/menatwork/releases/latest . Depois:
 
 1. Abra **Ajustes → Atualizar aplicativo**.
 2. Se houver uma versão mais nova, o app baixa o APK oficial e verifica sua assinatura e integridade.

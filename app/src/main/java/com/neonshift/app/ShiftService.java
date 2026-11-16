@@ -52,7 +52,7 @@ public class ShiftService extends Service implements LocationListener {
         Notification.Builder b = new Notification.Builder(this, CHANNEL)
             .setSmallIcon(com.neonshift.app.R.drawable.ic_notification).setContentTitle(title).setContentText(text)
             .setStyle(new Notification.BigTextStyle().bigText(text)).setContentIntent(open)
-            .setOngoing(true).setOnlyAlertOnce(true).setColor(0xff00f5ec).setShowWhen(false);
+            .setOngoing(true).setOnlyAlertOnce(true).setColor(0xff92ee73).setShowWhen(false);
         if ("work".equals(phase) || "pause".equals(phase)) {
             String action = "work".equals(phase) ? "pause" : "resume";
             PendingIntent pi = PendingIntent.getService(this, 1, new Intent(this, ShiftService.class).setAction(action),

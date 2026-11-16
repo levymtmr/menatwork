@@ -34,15 +34,15 @@ public class MainActivity extends Activity {
         invoices = new InvoiceStore(this);
         updater = AppUpdater.get(this);
         if (b != null) pendingPdf = b.getString("pendingPdf");
-        getWindow().setStatusBarColor(Color.rgb(8, 10, 24));
-        getWindow().setNavigationBarColor(Color.rgb(8, 10, 24));
+        getWindow().setStatusBarColor(Color.rgb(8, 18, 10));
+        getWindow().setNavigationBarColor(Color.rgb(8, 18, 10));
         web = new WebView(this);
-        web.setBackgroundColor(Color.rgb(8, 10, 24));
+        web.setBackgroundColor(Color.rgb(8, 18, 10));
         web.setOverScrollMode(View.OVER_SCROLL_NEVER);
         // Resize a native parent, not WebView padding: its CSS viewport must end
         // above system navigation on both gesture and three-button navigation.
         FrameLayout root = new FrameLayout(this);
-        root.setBackgroundColor(Color.rgb(8, 10, 24));
+        root.setBackgroundColor(Color.rgb(8, 18, 10));
         root.addView(web, new FrameLayout.LayoutParams(-1, -1));
         if (Build.VERSION.SDK_INT >= 30) getWindow().setDecorFitsSystemWindows(false);
         else getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_STABLE |

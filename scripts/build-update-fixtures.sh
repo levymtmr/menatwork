@@ -6,11 +6,15 @@ cd "$(dirname "$0")/.."
 : "${JAVA_HOME:?Configure JAVA_HOME}"
 export PATH="$JAVA_HOME/bin:$PATH"
 TOOLS="$ANDROID_HOME/build-tools/35.0.0"
+CURRENT_CODE="$(sed -n 's/^versionCode=//p' version.properties)"
+CURRENT_NAME="$(sed -n 's/^versionName=//p' version.properties)"
+FUTURE_CODE="$((CURRENT_CODE + 1))"
+FUTURE_NAME="$(python3 -c 'import sys; a,b,c=map(int,sys.argv[1].split(".")); print(f"{a}.{b}.{c+1}")' "$CURRENT_NAME")"
 OUT="$PWD/build/update-fixtures"
 mkdir -p "$OUT/assets"
 "$TOOLS/aapt2" link -o "$OUT/future-base.apk" -I "$ANDROID_HOME/platforms/android-35/android.jar" \
   --manifest build/manual/AndroidManifest.xml --min-sdk-version 26 --target-sdk-version 35 \
-  --version-code 4 --version-name 1.2.1 -A app/src/main/assets build/manual/resources.zip
+  --version-code "$FUTURE_CODE" --version-name "$FUTURE_NAME" -A app/src/main/assets build/manual/resources.zip
 cp "$OUT/future-base.apk" "$OUT/future-dex.apk"
 (cd build/manual/dex && zip -q -u "$OUT/future-dex.apk" classes*.dex)
 "$TOOLS/zipalign" -f 4 "$OUT/future-dex.apk" "$OUT/future-aligned.apk"
@@ -22,4 +26,9 @@ if [ ! -f "$OUT/wrong-key.jks" ]; then
 fi
 "$TOOLS/apksigner" sign --v4-signing-enabled false --ks "$OUT/wrong-key.jks" --ks-pass pass:fixture-test \
   --out "$OUT/assets/wrong-key.apk" "$OUT/future-aligned.apk"
-cp dist/neon-shift-1.2.0.apk "$OUT/assets/current.apk"
+cp "dist/neon-shift-$CURRENT_NAME.apk" "$OUT/assets/current.apk"
+python3 - "$OUT/assets/fixture-config.json" "$CURRENT_CODE" "$CURRENT_NAME" "$FUTURE_CODE" "$FUTURE_NAME" <<'PYFIXTURE'
+import json,sys
+from pathlib import Path
+Path(sys.argv[1]).write_text(json.dumps(dict(currentCode=int(sys.argv[2]),currentName=sys.argv[3],futureCode=int(sys.argv[4]),futureName=sys.argv[5])))
+PYFIXTURE

@@ -1,14 +1,22 @@
-# Neon Shift 1.2.0
+# Neon Shift 1.3.0
 
-Aplicativo Android pessoal, em português, para acompanhar o ganho líquido estimado de uma jornada de trabalho. Visual cyberpunk em pixel art, com cidade e trajeto desenhados em canvas e fonte Silkscreen distribuída sob a licença OFL.
+Aplicativo Android pessoal, em português, para acompanhar o ganho líquido estimado de uma jornada de trabalho. Interface de terminal retrofuturista inspirada no Pip-Boy: fósforo verde, linhas sutis de CRT, painéis monocromáticos e trabalhador animado. Ilustrações originais desenhadas em canvas.
 
 ## Instalar
 
-O instalador fica em `dist/neon-shift-1.2.0.apk`. Veja `INSTALAR.md`.
+O instalador fica em `dist/neon-shift-1.3.0.apk`. Veja `INSTALAR.md`.
 
 Compatível com Android 8.0 ou superior, incluindo o Galaxy S22 Ultra. O APK usa apenas Java e APIs do Android, sem bibliotecas nativas, conta no aplicativo ou servidor de registros. O GitHub hospeda as atualizações públicas. A interface é local em WebView; o GPS, a persistência e o acompanhamento em segundo plano são nativos.
 
-## Atualização 1.2.0 e GitHub
+## Interface 1.3.0
+
+O painel, histórico, invoices e ajustes agora usam uma tela monocromática verde, fontes de terminal, contornos de instrumentos e efeito leve de CRT. O mascote original martela durante o trabalho e para na pausa. O mapa ilustrativo também foi redesenhado. Os controles da jornada ficam antes do extrato financeiro, e a barra de navegação continua fora da área rolável e acima das barras do Android.
+
+Essa atualização visual não altera cálculos, registros, dados de invoice ou o modelo branco do PDF enviado ao cliente. A animação respeita a preferência do sistema de reduzir movimentos. O efeito de CRT é estático, sem cintilação.
+
+Versão 1.3.0 / versionCode 4, assinada pela mesma chave. Usuários da versão 1.2.0 podem instalar por **Ajustes → Atualizar aplicativo**. Os registros existentes são preservados.
+
+## Atualizações e GitHub
 
 Repositório oficial: https://github.com/levymtmr/menatwork
 

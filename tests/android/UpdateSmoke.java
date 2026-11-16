@@ -32,21 +32,29 @@ public class UpdateSmoke extends Instrumentation {
         }
         Context c = getTargetContext(); File future = null, wrong = null, current = null, ready = null;
         try {
+            JSONObject config;
+            try(InputStream in=getContext().getAssets().open("fixture-config.json")) {
+                ByteArrayOutputStream bytes=new ByteArrayOutputStream();byte[] b=new byte[1024];int n;
+                while((n=in.read(b))!=-1)bytes.write(b,0,n);
+                config=new JSONObject(new String(bytes.toByteArray(),StandardCharsets.UTF_8));
+            }
+            int baseline=config.getInt("currentCode"),next=config.getInt("futureCode");
+            String baselineName=config.getString("currentName"),nextName=config.getString("futureName");
             future=copy("future.apk");wrong=copy("wrong-key.apk");current=copy("current.apk");
             File folder=new File(c.getFilesDir(),"updates");folder.mkdirs();
-            ready=new File(folder,"update-4.apk");
+            ready=new File(folder,"update-"+next+".apk");
             try (InputStream in=new FileInputStream(future);OutputStream out=new FileOutputStream(ready)) {
                 byte[] b=new byte[16384];int n;while((n=in.read(b))!=-1)out.write(b,0,n);
             }
-            JSONObject meta=manifest(future,4,"1.2.1");
+            JSONObject meta=manifest(future,next,nextName);
             c.getSharedPreferences("app_updates",0).edit().putString("ready",meta.toString()).commit();
             AppUpdater updater=AppUpdater.get(c);
-            check(updater.currentCode==3,"installed baseline version");
+            check(updater.currentCode==baseline,"installed baseline version");
             check("ready".equals(updater.snapshot().getString("stage")),"restore validated download");
             updater.validateApk(future,AppUpdater.parse(meta));check(true,"same-key future update accepted");
-            boolean badKey=false;try{updater.validateApk(wrong,AppUpdater.parse(manifest(wrong,4,"1.2.1")));}catch(IOException e){badKey=true;}
+            boolean badKey=false;try{updater.validateApk(wrong,AppUpdater.parse(manifest(wrong,next,nextName)));}catch(IOException e){badKey=true;}
             check(badKey,"wrong signing key rejected");
-            boolean old=false;try{updater.validateApk(current,AppUpdater.parse(manifest(current,3,"1.2.0")));}catch(IOException e){old=true;}
+            boolean old=false;try{updater.validateApk(current,AppUpdater.parse(manifest(current,baseline,baselineName)));}catch(IOException e){old=true;}
             check(old,"same version rejected");
             JSONObject corrupt=new JSONObject(meta.toString()).put("sha256","0000000000000000000000000000000000000000000000000000000000000000");
             boolean hash=false;try{updater.validateApk(future,AppUpdater.parse(corrupt));}catch(IOException e){hash=true;}
@@ -54,7 +62,7 @@ public class UpdateSmoke extends Instrumentation {
             JSONObject shortSize=new JSONObject(meta.toString()).put("size",future.length()-1);
             boolean size=false;try{updater.validateApk(future,AppUpdater.parse(shortSize));}catch(IOException e){size=true;}
             check(size,"wrong length rejected");
-            Uri uri=Uri.parse("content://com.neonshift.app.updates/update-4.apk");
+            Uri uri=Uri.parse("content://com.neonshift.app.updates/update-"+next+".apk");
             check("application/vnd.android.package-archive".equals(c.getContentResolver().getType(uri)),"APK MIME");
             try(InputStream in=c.getContentResolver().openInputStream(uri)){byte[] head=new byte[2];check(in.read(head)==2&&"PK".equals(new String(head,StandardCharsets.US_ASCII)),"installer can read actual APK");}
             boolean write=false;try{c.getContentResolver().openFileDescriptor(uri,"w");}catch(Exception e){write=true;}

@@ -1,11 +1,14 @@
-Neon Shift 1.2.0
+Neon Shift 1.3.0 — Terminal verde
 
-- Novo botão Atualizar aplicativo em Ajustes.
-- Consulta e download das versões oficiais publicadas neste repositório.
-- Verificação de tamanho, SHA-256, versão, pacote e assinatura antes da instalação.
-- Dados de exemplo nas instalações novas; os dados já salvos continuam no celular.
-- Preserva o histórico de trabalho e os invoices durante a atualização.
+- Interface inspirada no Pip-Boy: fósforo verde, linhas sutis de CRT e painéis de terminal retrofuturista.
+- Novo trabalhador monocromático animado martelando durante a jornada; a animação para na pausa.
+- Ilustração de trajeto em estilo cartográfico de terminal.
+- Controles de iniciar, pausar e encerrar mais próximos do topo.
+- Novo visual aplicado também ao histórico, invoices, ajustes, ícone e cores do Android.
+- Navegação inferior continua separada da barra do sistema.
 
-Instale este APK uma vez como atualização da versão anterior. Nas próximas versões,
-use Ajustes → Atualizar aplicativo. O Android pede autorização para instalações do
-Neon Shift e confirmação final. Não desinstale a versão anterior.
+As funções de jornada, custos, GPS, invoices e atualização continuam disponíveis.
+O PDF do invoice mantém o modelo profissional anterior.
+
+Na versão 1.2.0, use Ajustes → Atualizar aplicativo para instalar esta versão.
+Também é possível baixar o APK abaixo e instalar por cima, sem desinstalar.
