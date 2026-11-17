@@ -47,7 +47,20 @@ final class Store {
         catch (Exception e) { return new JSONArray(); }
     }
     void saveConfig(JSONObject j) { prefs.edit().putString("config", j.toString()).commit(); }
-    void save(JSONObject j) { prefs.edit().putString("session", j.toString()).commit(); }
+    void save(JSONObject j) { withWorksite(prefs.edit(),j.optString("worksite")).putString("session", j.toString()).commit(); }
+    private List<String> savedWorksites() {
+        List<String> out=new ArrayList<>();try{JSONArray a=new JSONArray(prefs.getString("worksites","[]"));for(int n=0;n<a.length();n++)out.add(a.optString(n));}catch(Exception ignored){}return out;
+    }
+    private SharedPreferences.Editor withWorksite(SharedPreferences.Editor edit,String address) {
+        List<String> known=savedWorksites();
+        if(!prefs.getBoolean("worksitesImported",false)){JSONArray legacy=worksites();known=new ArrayList<>();for(int n=0;n<legacy.length();n++)known.add(legacy.optString(n));}
+        return edit.putBoolean("worksitesImported",true).putString("worksites",new JSONArray(WorksiteBook.merge(Arrays.asList(address),known)).toString());
+    }
+    JSONArray worksites() {
+        List<String> used=new ArrayList<>();used.add(session().optString("worksite"));JSONArray rows=history();
+        for(int n=0;n<rows.length();n++){JSONObject row=rows.optJSONObject(n);if(row!=null&&!row.optBoolean("deleted"))used.add(row.optString("worksite"));}
+        return new JSONArray(WorksiteBook.merge(savedWorksites(),used));
+    }
     void finish(JSONObject session) {
         if (!session.has("workDate")) put(session,"workDate",date(session));
         JSONArray h = history();
@@ -55,7 +68,7 @@ final class Store {
         out.put(session);
         for (int i = 0; i < h.length(); i++) out.put(h.opt(i));
         // Session archive and active-session reset are one durable transaction.
-        prefs.edit().putString("history", out.toString()).putString("session", "{}").commit();
+        withWorksite(prefs.edit(),session.optString("worksite")).putString("history", out.toString()).putString("session", "{}").commit();
     }
     static String id(JSONObject record) { return record.optString("id",String.valueOf(record.optLong("startedAt"))); }
     static String date(JSONObject record) {
@@ -156,7 +169,7 @@ final class Store {
         record.remove("lastLat");record.remove("lastLon");record.remove("lastFix");record.remove("segmentStart");record.remove("segmentUptime");
         JSONArray out=new JSONArray();out.put(record);
         for(int n=0;n<all.length();n++){JSONObject old=all.getJSONObject(n);if(!id(old).equals(key))out.put(old);}
-        SharedPreferences.Editor edit=prefs.edit().putString("history",out.toString());if(active)edit.putString("session","{}");
+        SharedPreferences.Editor edit=withWorksite(prefs.edit(),worksite).putString("history",out.toString());if(active)edit.putString("session","{}");
         if(!edit.commit())throw new IllegalStateException("Não foi possível salvar o dia de trabalho.");
         return record;
     }

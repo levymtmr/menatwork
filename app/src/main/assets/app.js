@@ -94,7 +94,7 @@
     $('routeDestination').textContent=phase==='return'?'Destino de volta':'Trabalho';
     $('editCosts').disabled=phase==='idle';
     if(!settingsDirty)fillSettings();
-    window.JournalUI.render(state);window.SkillsUI.render(state);
+    window.WorksitesUI.render(state);window.JournalUI.render(state);window.SkillsUI.render(state);
     if(window.InvoiceUI)window.InvoiceUI.render(state);
     if(window.AppUpdateUI)window.AppUpdateUI.render(state.update);
   }
@@ -104,7 +104,7 @@
     if(!Number.isFinite(km)||km>100000||!Number.isFinite(extras)||extras>1000000||!Number.isFinite(hours)||hours>100000){toast('Informe distância, gastos e horas válidos, usando vírgula ou ponto.');return;}
     command('updateCosts',{km,extras,workedMs:Math.round(hours*3600000),worksite:$('manualWorksite').value.trim(),client:$('manualClient').value.trim(),workType:$('manualWorkType').value.trim()});editorOpen=false;$('costEditor').classList.add('hidden');
   };
-  $('settingsForm').oninput=()=>{settingsDirty=true;};
+  $('settingsForm').oninput=$('settingsForm').onchange=()=>{settingsDirty=true;};
   $('settingsForm').onsubmit=e=>{
     e.preventDefault();const form=e.currentTarget,p={currency:form.elements.currency.value};
     const limits={hourly:10000,tax:100,consumption:100,fuelPrice:1000,tyres:1000,maintenance:1000,depreciation:1000};

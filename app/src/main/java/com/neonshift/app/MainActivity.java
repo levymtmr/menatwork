@@ -150,6 +150,7 @@ public class MainActivity extends Activity {
             Store.put(j, "nextInvoiceNumber", invoices.nextNumber());
             Store.put(j, "invoiceToday", InvoiceStore.today().toString());
             Store.put(j, "invoiceAddresses", invoices.seed.optJSONArray("addresses"));
+            Store.put(j,"worksites",store.worksites());
             Store.put(j, "update", updater.snapshot());
             Store.put(j,"skills",store.skills());Store.put(j,"progression",store.progress());
             return j.toString();

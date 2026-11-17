@@ -21,3 +21,5 @@ PY
 "$JAVA_HOME/bin/javac" -encoding UTF-8 -cp build/tests -d build/tests app/src/main/java/com/neonshift/app/LunchEngine.java tests/LunchTest.java
 "$JAVA_HOME/bin/java" -cp build/tests LunchTest
 "${NODE_BIN:-node}" tests/listing.cjs
+"$JAVA_HOME/bin/javac" -encoding UTF-8 -cp build/tests -d build/tests app/src/main/java/com/neonshift/app/WorksiteBook.java tests/WorksiteBookTest.java
+"$JAVA_HOME/bin/java" -cp build/tests WorksiteBookTest

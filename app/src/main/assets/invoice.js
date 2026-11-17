@@ -48,7 +48,7 @@
     const top=text('div','','entry-top');top.append(text('span',row.sourceId?'JORNADA DO HISTÓRICO':'LANÇAMENTO MANUAL'));
     const remove=text('button','×','remove-entry');remove.type='button';remove.setAttribute('aria-label','Remover lançamento');remove.onclick=()=>{box.remove();changed();};top.append(remove);box.append(top);
     const grid=text('div','','invoice-grid');input('Data','date',row.date,grid,'date');const h=input('Horas reais','hours',row.hours,grid);h.inputMode='decimal';h.maxLength=32;box.append(grid);
-    const addr=input('Local do trabalho','workAddress',row.address,box);addr.maxLength=1000;addr.setAttribute('list','worksites');
+    const addr=input('Local do trabalho','workAddress',row.address,box);addr.maxLength=1000;window.WorksitesUI.bind(addr);
     box.append(text('p','','line-total'));$('invoiceRows').append(box);if(persist)changed();
   }
   function populate(draft){
@@ -90,7 +90,7 @@
     }
   }
   window.InvoiceUI={
-    render(s){state=s;window.Listing.options($('invoices-client'),(s.invoices||[]).map(r=>r.client));window.Listing.options($('invoices-type'),(s.invoices||[]).flatMap(r=>window.Listing.invoiceTypes(r,s)));if(!initialized)populate(s.invoiceDraft||{profile:window.invoiceDefaults.profile,number:s.nextInvoiceNumber||window.invoiceDefaults.nextNumber,rate:window.invoiceDefaults.profile.rate,rows:[]});$('invoiceDate').textContent=today();const data=s.invoiceAddresses||window.invoiceDefaults.addresses;if(!$('worksites').children.length){for(const value of [...data,'Day off']){const o=document.createElement('option');o.value=value;$('worksites').append(o);}}records();},
+    render(s){state=s;window.Listing.options($('invoices-client'),(s.invoices||[]).map(r=>r.client));window.Listing.options($('invoices-type'),(s.invoices||[]).flatMap(r=>window.Listing.invoiceTypes(r,s)));if(!initialized)populate(s.invoiceDraft||{profile:window.invoiceDefaults.profile,number:s.nextInvoiceNumber||window.invoiceDefaults.nextNumber,rate:window.invoiceDefaults.profile.rate,rows:[]});$('invoiceDate').textContent=today();records();},
     addJourney(s){
       const d=readDraft(),id=String(s.id||s.startedAt);
       if(s.config&&s.config.currency!=='AUD'){error('A jornada usa outra moeda. Preencha manualmente uma tarifa em AUD; o app não converte moedas.');return false;}

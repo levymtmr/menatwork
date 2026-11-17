@@ -1,12 +1,22 @@
-# Menatwork 1.6.0
+# Menatwork 1.6.1
 
 Aplicativo Android pessoal, em português, para acompanhar o ganho líquido estimado de uma jornada de trabalho. Interface de terminal retrofuturista inspirada no Pip-Boy: fósforo verde, linhas sutis de CRT, painéis monocromáticos e trabalhador animado. Ilustrações originais desenhadas em canvas.
 
 ## Instalar
 
-O instalador fica em `dist/neon-shift-1.6.0.apk`. Veja `INSTALAR.md`.
+O instalador fica em `dist/neon-shift-1.6.1.apk`. Veja `INSTALAR.md`.
 
 Compatível com Android 8.0 ou superior, incluindo o Galaxy S22 Ultra. O APK usa apenas Java e APIs do Android, sem bibliotecas nativas, conta no aplicativo ou servidor de registros. O GitHub hospeda as atualizações públicas. A interface é local em WebView; o GPS, a persistência e o acompanhamento em segundo plano são nativos.
+
+## Locais salvos e seletores (1.6.1)
+
+Os endereços usados nos shifts são guardados no celular em uma lista independente do histórico. Locais de jornadas antigas também são reconhecidos, e a primeira gravação importa esses endereços. A lista evita duplicatas por maiúsculas/minúsculas e espaços; Day off não é tratado como endereço.
+
+**Locais salvos / Saved work sites** aparece quando existem endereços conhecidos, no ajuste de jornada atual, no editor de um dia e nas linhas do invoice. Escolher uma opção preenche o endereço; é possível completar ou alterar o texto antes de salvar. O app não escolhe um local automaticamente para um novo turno, pois o usuário pode trabalhar em locais diferentes. As sugestões também reconhecem endereços já presentes em invoices locais.
+
+Seletores agora preservam a escolha durante a atualização automática. A moeda nos Ajustes reconhece o evento `change` do Android, mesmo quando não há `input`; salve os Ajustes para persistir a alteração. Opções de filtros são atualizadas sem reconstruir a lista enquanto ela está aberta. Os valores internos das opções são preservados durante a tradução.
+
+Versão 1.6.1 / versionCode 8, com o mesmo pacote e certificado.
 
 ## Almoço, filtros e Retro Console (1.6.0)
 
