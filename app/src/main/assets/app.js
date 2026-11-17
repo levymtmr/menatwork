@@ -28,7 +28,7 @@
     document.querySelector('main').scrollTo({top:0,behavior:'instant'});
     refresh();
   }
-  window.goHome=()=>{if(window.JournalUI?.back())return true;if(currentPage==='today')return false;switchPage('today');return true;};
+  window.goHome=()=>{if(window.ClientsUI?.back())return true;if(window.JournalUI?.back())return true;if(currentPage==='today')return false;switchPage('today');return true;};
   document.querySelectorAll('nav button').forEach(el=>el.addEventListener('click',()=>switchPage(el.dataset.page)));
   function button(text,action,cls='primary') {const b=safeText('button',text,'button '+cls);b.type='button';b.onclick=()=>command(action);return b;}
   let actionsPhase='';

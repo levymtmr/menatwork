@@ -25,6 +25,7 @@ public class MainActivity extends Activity {
     private FrameLayout root;
     private Store store;
     private InvoiceStore invoices;
+    private ClientRegistry clients;
     private AppUpdater updater;
     private String pendingPdf;
     private String pendingAction;
@@ -33,6 +34,7 @@ public class MainActivity extends Activity {
         super.onCreate(b);
         store = new Store(this);
         invoices = new InvoiceStore(this);
+        clients = new ClientRegistry(this,store,invoices);
         updater = AppUpdater.get(this);
         if (b != null) pendingPdf = b.getString("pendingPdf");
         getWindow().setStatusBarColor(Color.rgb(8, 18, 10));
@@ -98,6 +100,7 @@ public class MainActivity extends Activity {
         web.setBackgroundColor(color);root.setBackgroundColor(color);
     }
     private String tr(String s){return Language.text(this,s);}
+    private void rememberClient(JSONObject profile){try{clients.remember(profile);}catch(Exception e){android.util.Log.w("Menatwork","Could not remember client",e);}}
     private void message(String s) { Toast.makeText(this, tr(s), Toast.LENGTH_LONG).show(); }
     private void dispatch(String action) {
         boolean needsGps = "commute".equals(action) || "return".equals(action) ||
@@ -151,6 +154,7 @@ public class MainActivity extends Activity {
             Store.put(j, "invoiceToday", InvoiceStore.today().toString());
             Store.put(j, "invoiceAddresses", invoices.seed.optJSONArray("addresses"));
             Store.put(j,"worksites",store.worksites());
+            Store.put(j,"clients",clients.list());
             Store.put(j, "update", updater.snapshot());
             Store.put(j,"skills",store.skills());Store.put(j,"progression",store.progress());
             return j.toString();
@@ -159,16 +163,18 @@ public class MainActivity extends Activity {
             runOnUiThread(() -> {
                 try {
                     JSONObject p = new JSONObject(payload);
-                    if ("saveLanguage".equals(action)) {
+                    if ("saveClient".equals(action)) {
+                        JSONObject saved=clients.save(p);web.evaluateJavascript("window.clientSaved && window.clientSaved("+saved.toString()+")",null);message("Cliente salvo.");
+                    } else if ("saveLanguage".equals(action)) {
                         store.saveLanguage(p.getString("language"));
                     } else if ("saveTheme".equals(action)) {
                         store.saveTheme(p.getString("theme"));applyTheme();
                     } else if ("saveJournal".equals(action)) {
                         if(p.optBoolean("finishActive")) {
                             confirm("Salvar término corrigido?","O cronômetro será encerrado e o registro usará os horários/horas informados. Os totais e o XP serão recalculados.",()->{
-                                store.saveJournal(p);stopService(new Intent(MainActivity.this,ShiftService.class));callback("journalSaved");message("Jornada corrigida e encerrada.");
+                                store.saveJournal(p);rememberClient(p);stopService(new Intent(MainActivity.this,ShiftService.class));callback("journalSaved");message("Jornada corrigida e encerrada.");
                             });
-                        } else {store.saveJournal(p);callback("journalSaved");message("Dia de trabalho salvo. Totais e XP atualizados.");}
+                        } else {store.saveJournal(p);rememberClient(p);callback("journalSaved");message("Dia de trabalho salvo. Totais e XP atualizados.");}
                     } else if ("removeJournal".equals(action)||"restoreJournal".equals(action)) {
                         boolean deleted="removeJournal".equals(action);
                         confirm(deleted?"Remover jornada?":"Restaurar jornada?",deleted?"A jornada vai para a lixeira e sai dos totais e do XP. Invoices vinculados ficarão sinalizados para revisão.":"A jornada voltará aos totais e ao XP.",()->{store.removeJournal(p.getString("id"),deleted);message(deleted?"Jornada removida dos totais.":"Jornada restaurada.");});
@@ -225,7 +231,7 @@ public class MainActivity extends Activity {
                                 "\n\nConfira o número com o Invoice Deck do computador. Após emitir, o PDF será preservado neste celular."))
                             .setPositiveButton(tr("Emitir PDF"), (d, w) -> {
                                 try {
-                                    invoices.issue(p);
+                                    invoices.issue(p);rememberClient(p.getJSONObject("profile"));
                                     web.evaluateJavascript("window.invoiceIssued && window.invoiceIssued()", null);
                                     message("Invoice emitido. Use Enviar para abrir o e-mail com o PDF anexado.");
                                 } catch (Exception e) { invoiceError(e); }
@@ -267,7 +273,7 @@ public class MainActivity extends Activity {
                             Store.put(s, "workedMs", Math.round(ms));
                             if ("work".equals(s.optString("phase"))) Store.startSegment(s);
                         }
-                        store.save(s);
+                        store.save(s);rememberClient(s);
                         message("Tempo, distância e gastos atualizados.");
                     } else if ("export".equals(action)) {
                         Intent i = new Intent(Intent.ACTION_CREATE_DOCUMENT).setType("text/csv").addCategory(Intent.CATEGORY_OPENABLE);
@@ -276,7 +282,10 @@ public class MainActivity extends Activity {
                     } else if ("appSettings".equals(action)) {
                         startActivity(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:" + getPackageName())));
                     }
-                } catch (Exception e) { invoiceError(e); }
+                } catch (Exception e) {
+                    if("saveClient".equals(action)){String error=tr(e.getMessage());message(error);web.evaluateJavascript("window.clientError && window.clientError("+JSONObject.quote(error)+")",null);}
+                    else invoiceError(e);
+                }
             });
         }
     }

@@ -1,12 +1,22 @@
-# Menatwork 1.6.2
+# Menatwork 1.7.0
 
 Aplicativo Android pessoal, em português, para acompanhar o ganho líquido estimado de uma jornada de trabalho. Interface de terminal retrofuturista inspirada no Pip-Boy: fósforo verde, linhas sutis de CRT, painéis monocromáticos e trabalhador animado. Ilustrações originais desenhadas em canvas.
 
 ## Instalar
 
-O instalador fica em `dist/neon-shift-1.6.2.apk`. Veja `INSTALAR.md`.
+O instalador fica em `dist/neon-shift-1.7.0.apk`. Veja `INSTALAR.md`.
 
 Compatível com Android 8.0 ou superior, incluindo o Galaxy S22 Ultra. O APK usa apenas Java e APIs do Android, sem bibliotecas nativas, conta no aplicativo ou servidor de registros. O GitHub hospeda as atualizações públicas. A interface é local em WebView; o GPS, a persistência e o acompanhamento em segundo plano são nativos.
+
+## Cadastro de clientes (1.7.0)
+
+Em **Settings → Clients → New client** (Ajustes → Clientes → Novo cliente), cadastre nome, e-mail, endereço e ABN. Apenas o nome é obrigatório. O cadastro é persistido separadamente dos invoices e jornadas, com identificação estável e edição, busca e seleção. Nomes repetidos (ignorando maiúsculas e espaços) e e-mails inválidos são recusados. O nome aceita até 120 caracteres para corresponder ao modelo do invoice; endereço até 350, e-mail até 160 e ABN até 40.
+
+O botão **＋** ao lado de cada seleção abre o cadastro. Ao salvar, o novo cliente fica selecionado no turno, no editor do histórico ou no invoice de onde você abriu o formulário. É possível cadastrar mesmo antes de existir o primeiro invoice. Na primeira abertura, clientes válidos já existentes são importados de rascunho, invoices e jornadas, sem modificar esses registros. Novos nomes usados em jornadas salvas ou invoices emitidos são lembrados sem sobrescrever contatos já cadastrados.
+
+No invoice, selecionar um cliente preenche apenas nome, endereço, ABN e e-mail do cliente. Prestador, banco, tarifa e lançamentos permanecem. Editar o cadastro não reescreve PDFs emitidos ou nomes históricos. Se o cliente editado estiver no rascunho atual, os campos do cliente nesse rascunho são atualizados; confira antes de emitir.
+
+Versão 1.7.0 / versionCode 10. O PDF continua sempre em inglês.
 
 ## Cards e clientes rápidos (1.6.2)
 

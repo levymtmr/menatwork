@@ -1,11 +1,11 @@
-Menatwork 1.6.2 — Cards compactos e clientes rápidos
+Menatwork 1.7.0 — Cadastro de clientes
 
-- Removidos os números dos botões da navegação inferior.
-- O indicador Ready/Pronto não aparece mais quando o app está ocioso.
-- Escolha rápida de clientes usados no turno atual, no editor de jornadas e no rascunho do invoice.
-- Ao escolher um cliente de um invoice anterior, os dados de contato desse cliente são preenchidos. Os dados do prestador e do banco permanecem.
-- Clientes sem dados de contato conhecidos não herdam o e-mail ou endereço do cliente anterior.
-- Cards do histórico, invoices e habilidades abrem compactos, com Expandir/Recolher. Os valores e as informações principais continuam visíveis.
-- Painéis do dashboard, dos Ajustes e do rascunho também podem ser recolhidos. A escolha é mantida durante a navegação e as atualizações da tela.
+- Novo cadastro em Ajustes → Clientes → Novo cliente, com nome, e-mail, endereço e ABN.
+- Salve vários clientes e escolha entre eles nos turnos, no histórico e nos invoices.
+- Botão ＋ ao lado da seleção para cadastrar um cliente sem sair da jornada ou do invoice. O novo cliente já fica selecionado após salvar.
+- Edição e busca de clientes cadastrados. Nomes duplicados e e-mails inválidos são recusados.
+- Clientes antigos são importados dos registros locais; novos clientes usados ao salvar jornadas ou emitir invoices também são lembrados.
+- Os dados do cliente ficam salvos no celular, independentemente de editar ou limpar um rascunho.
+- Alterar um cadastro não modifica PDFs já emitidos. Os dados bancários do prestador continuam separados dos dados do cliente.
 
 O PDF permanece sempre em inglês. Instale por cima da versão anterior, sem desinstalar, para manter seus dados.
