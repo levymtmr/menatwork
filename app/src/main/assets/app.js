@@ -61,8 +61,12 @@
     }));
     $('deductions').textContent='− '+money(t.tax+t.carCosts);
   }
+  function renderWorkClients(){
+    const select=$('workClient'),items=state.clients||[],sig=JSON.stringify(items.map(c=>[c.id,c.client]));
+    if(document.activeElement!==select&&select.dataset.signature!==sig){const value=select.value;select.replaceChildren();select.append(new Option(window.I18n.t('Escolher cliente'),''));for(const c of items){const o=new Option(c.client,c.id);o.dataset.userText='';select.append(o);}select.value=value;select.dataset.signature=sig;}
+  }
   function fillSettings() {
-    const form=$('settingsForm');
+    const form=$('settingsForm');if(document.activeElement!==$('workClient'))$('workClient').value=state.config.clientId||'';
     for(const [key,value]of Object.entries(state.config)){if(form.elements.namedItem(key))form.elements.namedItem(key).value=(window.I18n.language()==='pt'?String(value).replace('.',','):String(value));}
   }
   function refresh() {
@@ -93,7 +97,7 @@
     $('routeOrigin').textContent=phase==='return'?'Trabalho':'Partida variável';
     $('routeDestination').textContent=phase==='return'?'Destino de volta':'Trabalho';
     $('editCosts').disabled=phase==='idle';
-    if(!settingsDirty)fillSettings();
+    renderWorkClients();if(!settingsDirty)fillSettings();
     window.ClientsUI.render(state);window.WorksitesUI.render(state);window.JournalUI.render(state);window.SkillsUI.render(state);
     if(window.InvoiceUI)window.InvoiceUI.render(state);
     if(window.AppUpdateUI)window.AppUpdateUI.render(state.update);
@@ -104,9 +108,10 @@
     if(!Number.isFinite(km)||km>100000||!Number.isFinite(extras)||extras>1000000||!Number.isFinite(hours)||hours>100000){toast('Informe distância, gastos e horas válidos, usando vírgula ou ponto.');return;}
     command('updateCosts',{km,extras,workedMs:Math.round(hours*3600000),worksite:$('manualWorksite').value.trim(),client:$('manualClient').value.trim(),workType:$('manualWorkType').value.trim()});editorOpen=false;$('costEditor').classList.add('hidden');
   };
+  $('workClient').addEventListener('change',()=>{const c=(state.clients||[]).find(c=>c.id===$('workClient').value);if(c?.hourly>0)$('settingHourly').value=c.hourly;settingsDirty=true;});
   $('settingsForm').oninput=$('settingsForm').onchange=()=>{settingsDirty=true;};
   $('settingsForm').onsubmit=e=>{
-    e.preventDefault();const form=e.currentTarget,p={currency:form.elements.currency.value};
+    e.preventDefault();const form=e.currentTarget,p={currency:form.elements.currency.value,clientId:$('workClient').value};
     const limits={hourly:10000,tax:100,consumption:100,fuelPrice:1000,tyres:1000,maintenance:1000,depreciation:1000};
     for(const [key,max]of Object.entries(limits)){
       p[key]=number(form.elements.namedItem(key).value);

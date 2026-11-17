@@ -1,9 +1,10 @@
-Menatwork 1.7.1 — Valor da hora por cliente
+Menatwork 1.7.2 — Escolher cliente ao iniciar
 
-- Cada cliente pode ter seu próprio valor por hora no cadastro.
-- Selecionar um cliente preenche a tarifa na jornada e no invoice.
-- Na jornada ativa, salvar a troca de cliente aplica a tarifa desse cliente.
-- Editar o cadastro não recalcula jornadas antigas nem invoices já emitidos.
-- Clientes antigos usam a tarifa atual até você definir a tarifa no cadastro.
+- Ao iniciar Commute to work ou iniciar direto no trabalho, escolha para qual cliente vai trabalhar.
+- A lista mostra o cliente e sua tarifa por hora; o trajeto e a jornada usam essa seleção.
+- Permite abrir o cadastro de um novo cliente antes de iniciar.
+- Settings → Work também permite selecionar um cliente e editar sua tarifa.
+- A tarifa salva em Work atualiza o cadastro do cliente selecionado.
+- Jornadas em andamento e registros antigos mantêm sua tarifa.
 
-Instale por cima da versão anterior, sem desinstalar. O PDF continua em inglês.
+Instale por cima da versão atual, sem desinstalar.

@@ -74,6 +74,7 @@ public class ShiftService extends Service implements LocationListener {
             Store.put(s, "extras", 0);
             Store.put(s, "workedMs", 0);
             Store.put(s, "config", store.config());
+            Store.put(s,"client",store.config().optString("client"));Store.put(s,"clientId",store.config().optString("clientId"));
             Store.put(s, "skillIds", new org.json.JSONArray());
             Store.put(s, "phase", "commute".equals(action) ? "commute" : "work");
             if ("work".equals(action)) { Store.startSegment(s); Store.put(s,"workStartedAt",now);Store.put(s,"workDate",java.time.LocalDate.now().toString()); }

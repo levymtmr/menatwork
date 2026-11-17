@@ -500,5 +500,9 @@
   "Cliente não encontrado.": "Client not found.",
   "Não foi possível salvar o cliente.": "Could not save the client.",
   "Valor da hora do cliente": "Client hourly rate",
-  "Confira o valor da hora do cliente.": "Check the client hourly rate."
+  "Confira o valor da hora do cliente.": "Check the client hourly rate.",
+  "Cliente do trabalho": "Work client",
+  "Para qual cliente você vai trabalhar?": "Which client will you work for?",
+  "Cadastre um cliente para iniciar o trabalho.": "Add a client to start work.",
+  "Iniciar": "Start"
 }

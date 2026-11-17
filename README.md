@@ -198,3 +198,7 @@ As permissões e os tipos de serviço seguem a [documentação oficial de foregr
 ### Tarifa por cliente (1.7.1)
 
 Defina o valor por hora em Ajustes → Clientes → Editar. Ao selecionar o cliente, a tarifa é preenchida na jornada ou no invoice. A troca de cliente no editor da jornada ativa aplica a tarifa ao salvar. Alterar o cadastro não modifica jornadas já registradas nem invoices emitidos.
+
+### Cliente ao iniciar (1.7.2)
+
+Ao iniciar o trajeto ou o trabalho, escolha o cliente na lista com as tarifas. O serviço salva o cliente e uma cópia da tarifa na nova jornada. Settings → Work permite selecionar o cliente e atualizar sua tarifa. Alterações posteriores não recalculam a jornada ativa.

@@ -102,6 +102,20 @@ public class MainActivity extends Activity {
     private String tr(String s){return Language.text(this,s);}
     private void rememberClient(JSONObject profile){try{clients.remember(profile);}catch(Exception e){android.util.Log.w("Menatwork","Could not remember client",e);}}
     private void message(String s) { Toast.makeText(this, tr(s), Toast.LENGTH_LONG).show(); }
+    private void chooseWorkClient(String action) throws Exception {
+        if(store.session().has("phase")){dispatch(action);return;}
+        JSONArray all=clients.list();
+        if(all.length()==0){new AlertDialog.Builder(this).setTitle(tr("Escolher cliente")).setMessage(tr("Cadastre um cliente para iniciar o trabalho.")).setPositiveButton(tr("Novo cliente"),(d,w)->web.evaluateJavascript("window.App.go('settings');window.ClientsUI.create();",null)).setNegativeButton(tr("Voltar"),null).show();return;}
+        List<JSONObject> list=new ArrayList<>();for(int n=0;n<all.length();n++)list.add(all.getJSONObject(n));list.sort((a,b)->a.optString("client").compareToIgnoreCase(b.optString("client")));
+        String[] labels=new String[list.size()];JSONObject current=store.config();int selected=-1;
+        for(int n=0;n<list.size();n++){JSONObject c=list.get(n);double rate=c.optDouble("hourly",current.optDouble("hourly"));labels[n]=c.optString("client")+" · "+current.optString("currency")+" "+String.format(Locale.US,"%.2f",rate)+" / h";if(c.optString("id").equals(current.optString("clientId")))selected=n;}
+        final int[] choice={selected};
+        AlertDialog dialog=new AlertDialog.Builder(this).setTitle(tr("Para qual cliente você vai trabalhar?"))
+            .setSingleChoiceItems(labels,selected,(d,w)->{choice[0]=w;((AlertDialog)d).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);})
+            .setPositiveButton(tr("Iniciar"),(d,w)->{try{if(store.session().has("phase"))return;JSONObject c=list.get(choice[0]),cfg=store.config();Store.put(cfg,"clientId",c.getString("id"));Store.put(cfg,"client",c.getString("client"));if(c.has("hourly"))Store.put(cfg,"hourly",c.getDouble("hourly"));store.saveConfig(cfg);dispatch(action);}catch(Exception e){message(e.getMessage());}})
+            .setNeutralButton(tr("Novo cliente"),(d,w)->web.evaluateJavascript("window.App.go('settings');window.ClientsUI.create();",null))
+            .setNegativeButton(tr("Voltar"),null).create();dialog.show();dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(selected>=0);
+    }
     private void dispatch(String action) {
         boolean needsGps = "commute".equals(action) || "return".equals(action) ||
             ("recover".equals(action) && ShiftService.travelling(store.session()));
@@ -164,7 +178,7 @@ public class MainActivity extends Activity {
                 try {
                     JSONObject p = new JSONObject(payload);
                     if ("saveClient".equals(action)) {
-                        JSONObject saved=clients.save(p);web.evaluateJavascript("window.clientSaved && window.clientSaved("+saved.toString()+")",null);message("Cliente salvo.");
+                        JSONObject saved=clients.save(p);JSONObject cfg=store.config();if(saved.optString("id").equals(cfg.optString("clientId"))){Store.put(cfg,"client",saved.getString("client"));if(saved.has("hourly"))Store.put(cfg,"hourly",saved.getDouble("hourly"));store.saveConfig(cfg);}web.evaluateJavascript("window.clientSaved && window.clientSaved("+saved.toString()+")",null);message("Cliente salvo.");
                     } else if ("saveLanguage".equals(action)) {
                         store.saveLanguage(p.getString("language"));
                     } else if ("saveTheme".equals(action)) {
@@ -248,11 +262,13 @@ public class MainActivity extends Activity {
                         i.putExtra(Intent.EXTRA_TITLE, pendingPdf);
                         startActivityForResult(i, 21);
                     } else if (Arrays.asList("commute", "work", "pause", "resume", "return", "recover").contains(action)) {
-                        dispatch(action);
+                        if(("commute".equals(action)||"work".equals(action))&&!store.session().has("phase"))chooseWorkClient(action);else dispatch(action);
                     } else if ("finish".equals(action)) {
                         askLunch();
                     } else if ("saveConfig".equals(action)) {
                         validateConfig(p);
+                        String clientId=p.optString("clientId");
+                        if(!clientId.isEmpty()){JSONObject selected=null;JSONArray all=clients.list();for(int n=0;n<all.length();n++)if(clientId.equals(all.getJSONObject(n).optString("id")))selected=all.getJSONObject(n);if(selected==null)throw new IllegalArgumentException("Cliente não encontrado.");selected.put("hourly",p.getDouble("hourly"));clients.save(selected);Store.put(p,"client",selected.getString("client"));}
                         store.saveConfig(p);
                         message(store.session().has("phase") ? "Configurações salvas para a próxima jornada." : "Configurações salvas.");
                     } else if ("updateCosts".equals(action)) {
