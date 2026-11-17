@@ -75,7 +75,7 @@
     for(const [target,items] of [[$('invoiceRecords'),active.slice(0,limit)],[$('invoiceTrashList'),removed.slice(0,trashLimit)]]){
       target.replaceChildren();if(!items.length)target.append(text('p','Nenhum invoice neste grupo.','empty'));
       for(const r of items){
-        const cancelled=r.status==='cancelled',card=text('article','','panel history-card');card.append(text('h3','INVOICE #'+String(r.number).padStart(3,'0')),userText(text('p',r.client,'muted')),text('p',cash(Math.round(Number(r.total)*100)),'history-net'),text('p','Emissão: '+r.issued+' · AUD','muted'));
+        const cancelled=r.status==='cancelled',card=text('article','','panel history-card');card.append(text('h3','INVOICE #'+String(r.number).padStart(3,'0')),userText(text('p',r.client,'muted record-client')),text('p',cash(Math.round(Number(r.total)*100)),'history-net'),text('p','Emissão: '+r.issued+' · AUD','muted record-date'));
         if(!cancelled)card.append(text('p',r.paid?'✓ PAGO':'◷ AGUARDANDO PAGAMENTO','billing-badge '+(r.paid?'paid':'unpaid')));
         if(cancelled)card.append(text('p','CANCELADO · não entra no total. O PDF original e o número ficam preservados.','help'));
         if(r.needsReview)card.append(text('p','REVISÃO NECESSÁRIA: uma jornada vinculada mudou. Crie uma correção antes de enviar.','notice'));
@@ -85,11 +85,12 @@
           actions.append(recordButton(r.paid?'MARCAR COMO NÃO PAGO':'✓ MARCAR COMO PAGO','setInvoicePaid',r.filename,'secondary payment-action',{paid:!r.paid}));
           actions.append(recordButton('CORRIGIR / NOVO RASCUNHO','correctInvoice',r.filename),recordButton('REMOVER','cancelInvoice',r.filename,'subtle'));
         }
-        card.append(actions);target.append(card);
+        card.append(actions);window.FoldUI.record(card,'invoice-'+r.filename);target.append(card);
       }
     }
   }
   window.InvoiceUI={
+    selectClient(profile){for(const key of ['client','client_address','client_abn','client_email'])document.querySelector('#invoices [name="'+key+'"]').value=profile[key]||'';changed();},
     render(s){state=s;window.Listing.options($('invoices-client'),(s.invoices||[]).map(r=>r.client));window.Listing.options($('invoices-type'),(s.invoices||[]).flatMap(r=>window.Listing.invoiceTypes(r,s)));if(!initialized)populate(s.invoiceDraft||{profile:window.invoiceDefaults.profile,number:s.nextInvoiceNumber||window.invoiceDefaults.nextNumber,rate:window.invoiceDefaults.profile.rate,rows:[]});$('invoiceDate').textContent=today();records();},
     addJourney(s){
       const d=readDraft(),id=String(s.id||s.startedAt);
@@ -98,10 +99,10 @@
       const already=(state.invoices||[]).find(r=>r.status!=='cancelled'&&(r.sourceIds||[]).includes(id));
       if(already||d.rows.some(r=>r.sourceId===id)){error('Essa jornada já foi adicionada a um invoice.');return false;}
       const date=s.workDate||new Intl.DateTimeFormat('en-CA',{timeZone:'Australia/Adelaide',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(s.startedAt));
-      error('');addRow({date,address:s.worksite||'',hours:(s.workedMs/3600000).toFixed(10).replace(/0+$/,'').replace(/\.$/,''),sourceId:id,sourceFingerprint:s.billingFingerprint||'',workType:s.workType||''});return true;
+      error('');addRow({date,address:s.worksite||'',hours:(s.workedMs/3600000).toFixed(10).replace(/0+$/,'').replace(/\.$/,''),sourceId:id,sourceFingerprint:s.billingFingerprint||'',workType:s.workType||''});window.FoldUI.expand(document.querySelector('#invoices > .panel.settings-panel'));return true;
     }
   };
-  window.invoiceIssued=()=>{clearTimeout(saveTimer);initialized=false;editing=false;recordsSignature='';error('');};
+  window.invoiceIssued=()=>{window.FoldUI.expand(document.querySelector('#invoices > .panel.settings-panel'));clearTimeout(saveTimer);initialized=false;editing=false;recordsSignature='';error('');};
   $('invoices').addEventListener('input',e=>{if(e.target.matches('input,textarea'))changed();});
   $('invoiceMore').onclick=()=>{limit+=20;recordsSignature='';records();};$('invoiceTrashMore').onclick=()=>{trashLimit+=20;recordsSignature='';records();};
   new IntersectionObserver(entries=>{if(entries.some(e=>e.isIntersecting)&&!$('invoices').classList.contains('hidden')&&!$('invoiceMore').classList.contains('hidden'))$('invoiceMore').click();},{root:document.querySelector('main'),rootMargin:'120px'}).observe($('invoiceMore'));

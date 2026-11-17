@@ -474,5 +474,10 @@
   "＋ AJUSTAR JORNADA E CUSTOS": "＋ EDIT SHIFT AND EXPENSES",
   "Jornada salva.": "Shift saved.",
   "Locais salvos": "Saved work sites",
-  "Escolher local salvo": "Choose a saved site"
+  "Escolher local salvo": "Choose a saved site",
+  "Clientes salvos": "Saved clients",
+  "Escolher cliente": "Choose a client",
+  "Cliente do invoice": "Invoice client",
+  "− RECOLHER": "− COLLAPSE",
+  "+ EXPANDIR": "+ EXPAND"
 }

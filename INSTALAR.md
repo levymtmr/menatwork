@@ -2,7 +2,7 @@
 
 Se já usa a versão anterior, instale o novo APK por cima dela e escolha **Atualizar**. Não desinstale: assim seus registros e ajustes são preservados.
 
-1. Copie `neon-shift-1.6.1.apk` para o celular, por cabo USB ou outro meio de sua preferência.
+1. Copie `neon-shift-1.6.2.apk` para o celular, por cabo USB ou outro meio de sua preferência.
 2. Abra o APK pelo aplicativo **Meus Arquivos**. Se o Android pedir, permita instalar aplicativos dessa fonte e volte para concluir a instalação.
 3. Abra **Menatwork** e entre em **Ajustes**. Configure sua moeda, hora de trabalho, imposto estimado, consumo do carro, preço da gasolina e custos por km. Os valores iniciais são exemplos.
 4. Ao sair para trabalhar, toque em **Iniciar trajeto ao trabalho**. Permita localização precisa e notificações quando solicitado. O GPS funciona melhor ao ar livre.
@@ -72,3 +72,8 @@ O novo tema é Retro Console, em Settings → Themes. Escolhas de tema anteriore
 ## Reutilizar locais (1.6.1)
 
 Depois de salvar um endereço em uma jornada, escolha **Locais salvos / Saved work sites** no próximo turno ou registro. O seletor preenche o campo de endereço; confira e salve normalmente. Os locais anteriores são reconhecidos automaticamente e continuam no celular.
+
+
+## Cards e clientes (1.6.2)
+
+Use **Expandir / Expand** para abrir detalhes e ações de uma jornada ou invoice e **Recolher / Collapse** para compactar novamente. A seleção de clientes usados aparece nos editores e no topo do rascunho de invoice. Confira os dados antes de emitir.

@@ -70,7 +70,7 @@
     const s=state.session,t=state.totals,cfg=s.config||state.config,phase=s.phase||'idle';
     document.documentElement.dataset.phase=phase;
     const names={idle:'PRONTO',commute:'EM TRAJETO',work:'TRABALHANDO',pause:'EM PAUSA',return:'VOLTANDO'};
-    $('status').textContent=native?names[phase]:'PRÉVIA';$('status').classList.toggle('live',phase==='work'||phase==='commute'||phase==='return');
+    $('status').textContent=native?names[phase]:'PRÉVIA';$('status').classList.toggle('hidden',phase==='idle');$('status').classList.toggle('live',phase==='work'||phase==='commute'||phase==='return');
     $('todayDate').textContent=new Date(state.now).toLocaleDateString(window.I18n.locale(),{day:'2-digit',month:'2-digit'});
     $('net').textContent=money(t.net);$('net').classList.toggle('negative',t.net<0);
     $('currencyBadge').textContent=cfg.currency;$('timer').textContent=time(t.workedMs);$('hourly').textContent=money(cfg.hourly);
@@ -94,7 +94,7 @@
     $('routeDestination').textContent=phase==='return'?'Destino de volta':'Trabalho';
     $('editCosts').disabled=phase==='idle';
     if(!settingsDirty)fillSettings();
-    window.WorksitesUI.render(state);window.JournalUI.render(state);window.SkillsUI.render(state);
+    window.ClientsUI.render(state);window.WorksitesUI.render(state);window.JournalUI.render(state);window.SkillsUI.render(state);
     if(window.InvoiceUI)window.InvoiceUI.render(state);
     if(window.AppUpdateUI)window.AppUpdateUI.render(state.update);
   }

@@ -1,12 +1,22 @@
-# Menatwork 1.6.1
+# Menatwork 1.6.2
 
 Aplicativo Android pessoal, em português, para acompanhar o ganho líquido estimado de uma jornada de trabalho. Interface de terminal retrofuturista inspirada no Pip-Boy: fósforo verde, linhas sutis de CRT, painéis monocromáticos e trabalhador animado. Ilustrações originais desenhadas em canvas.
 
 ## Instalar
 
-O instalador fica em `dist/neon-shift-1.6.1.apk`. Veja `INSTALAR.md`.
+O instalador fica em `dist/neon-shift-1.6.2.apk`. Veja `INSTALAR.md`.
 
 Compatível com Android 8.0 ou superior, incluindo o Galaxy S22 Ultra. O APK usa apenas Java e APIs do Android, sem bibliotecas nativas, conta no aplicativo ou servidor de registros. O GitHub hospeda as atualizações públicas. A interface é local em WebView; o GPS, a persistência e o acompanhamento em segundo plano são nativos.
+
+## Cards e clientes rápidos (1.6.2)
+
+A navegação inferior usa apenas os nomes das abas; Ready/Pronto fica oculto no estado ocioso. Turnos em andamento ainda mostram seu estado.
+
+**Clientes salvos / Saved clients** permite escolher nomes já presentes em jornadas, invoices e no rascunho. No invoice, escolher um cliente conhecido também preenche endereço, ABN e e-mail da fatura anterior, preservando prestador, banco e descrição atual. Clientes sem dados conhecidos recebem esses campos vazios para evitar enviar a cobrança ao contato anterior. Nomes e dados digitados não são traduzidos.
+
+Cards de jornadas, invoices e habilidades abrem recolhidos. Use **Expandir/Recolher** para mostrar os detalhes e ações. Data, cliente, valores e estado de pagamento continuam visíveis no resumo. Os painéis dos Ajustes, extrato, trajeto e rascunho também têm controles para recolher; o estado é mantido durante esta execução do app e quando os dados são atualizados.
+
+Versão 1.6.2 / versionCode 9. O modelo do PDF permanece em inglês.
 
 ## Locais salvos e seletores (1.6.1)
 
