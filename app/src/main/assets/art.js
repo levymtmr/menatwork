@@ -33,9 +33,11 @@
     if(working&&swing<.13){[[278,100,284,96],[283,107,291,107],[276,94,278,87],[266,97,266,90]].forEach(p=>path([[p[0],p[1]],[p[2],p[3]]],green,1.5));}
   }
   function pixelScene(seconds,theme,working){
-    const medieval=theme==='medieval',s=3,pal=medieval?{o:'#21150f',h:'#e7c48d',f:'#c9936d',b:'#75452d',d:'#483524',l:'#c79a59',v:'#f6da9b'}:{o:'#080c1c',h:'#63efff',f:'#c79ab2',b:'#754caf',d:'#25325c',l:'#ff68d4',v:'#c9fbff'};
+    const medieval=theme==='medieval',s=3,pal=theme==='retro'?{o:'#231b18',h:'#f0e5c6',f:'#d7b68c',b:'#e37b56',d:'#a18b76',l:'#e8b75c',v:'#f5efd8'}:medieval?{o:'#21150f',h:'#e7c48d',f:'#c9936d',b:'#75452d',d:'#483524',l:'#c79a59',v:'#f6da9b'}:{o:'#080c1c',h:'#63efff',f:'#c79ab2',b:'#754caf',d:'#25325c',l:'#ff68d4',v:'#c9fbff'};
     rect(0,0,400,180,bg);
-    if(medieval){
+    if(theme==='retro'){
+      rect(0,0,400,180,'#191411');c.strokeStyle='#a18b76';c.lineWidth=1;for(let r=28;r<70;r+=10){c.beginPath();c.arc(78,86,r,0,Math.PI*2);c.stroke();}for(let n=0;n<28;n++){c.save();c.translate(78,86);c.rotate(n*Math.PI/14+(working&&!reduced?seconds*.2:0));rect(21,-2,40,3,n%3?'#d9cfb1':'#e77855');c.restore();}c.fillStyle='#e7b95f';c.beginPath();c.arc(78,86,15,0,Math.PI*2);c.fill();label('MW',69,90,'#191411',10);rect(143,22,1,137,'#63574b');rect(307,20,76,29,'#aa9b85');label('01 / SHIFT',315,38,'#191411',10);rect(313,88,49,49,'#e17c59');label('WORK',321,111,'#191411',10);rect(0,168,400,12,'#322a24');
+    }else if(medieval){
       rect(0,0,400,118,'#202327');rect(0,88,400,35,'#29302b');
       for(let i=0;i<3;i++){const x=22+i*133;rect(x,42,38,90,'#44433a');rect(x-4,37,46,9,'#535044');for(let n=0;n<3;n++)rect(x-4+n*18,29,10,12,'#535044');rect(x+13,55,8,20,'#15191b');}
       rect(90,12,3,47,'#806344');rect(93,14,26,28,'#924d35');rect(99,20,13,4,'#e4b86c');rect(104,17,4,14,'#e4b86c');
@@ -73,15 +75,15 @@
       '    oooo  ooooo     '
     ];
     const ox=155,oy=65;for(let y=0;y<sprite.length;y++)for(let x=0;x<sprite[y].length;x++){const color=pal[sprite[y][x]];if(color)rect(ox+x*s,oy+y*s,s,s,color);}
-    if(!medieval){rect(ox+6*s,oy+5*s,7*s,3,pal.v);rect(ox+4*s,oy+13*s,3,14,pal.l);}
+    if(!medieval&&theme!=='retro'){rect(ox+6*s,oy+5*s,7*s,3,pal.v);rect(ox+4*s,oy+13*s,3,14,pal.l);}
     const raised=working&&!reduced?Math.sin(seconds*5)>0:true,handX=224,handY=raised?78:106;
     rect(211,91,8,8,pal.b);rect(216,Math.min(94,handY),8,Math.abs(94-handY)+6,pal.b);rect(220,handY,10,7,pal.f);rect(228,handY-8,4,28,pal.l);rect(220,handY-13,23,9,pal.h);
-    rect(232,121,51,8,medieval?'#92917c':'#4f7c99');rect(240,129,27,6,medieval?'#6c6d5c':'#37546f');rect(249,135,10,9,medieval?'#5a594e':'#354968');rect(238,144,35,5,medieval?'#92917c':'#4f7c99');rect(232,152,52,5,pal.b);rect(237,157,6,15,pal.d);rect(274,157,6,15,pal.d);
+    rect(232,121,51,8,theme==='retro'?'#d6c9ad':medieval?'#92917c':'#4f7c99');rect(240,129,27,6,theme==='retro'?'#a18b76':medieval?'#6c6d5c':'#37546f');rect(249,135,10,9,theme==='retro'?'#63574b':medieval?'#5a594e':'#354968');rect(238,144,35,5,theme==='retro'?'#d6c9ad':medieval?'#92917c':'#4f7c99');rect(232,152,52,5,pal.b);rect(237,157,6,15,pal.d);rect(274,157,6,15,pal.d);
     if(working&&!raised){rect(240,112,3,3,'#ffe3a3');rect(253,108,3,3,pal.v);rect(265,115,4,3,pal.h);}
   }
   function render(seconds){
-    const theme=document.documentElement.dataset.theme||'pipboy';
-    green=theme==='medieval'?'#edc585':theme==='cyberpunk'?'#65eaff':'#92ee73';dim=theme==='medieval'?'#80664b':theme==='cyberpunk'?'#5a477c':'#37582d';bg=theme==='medieval'?'#18130f':theme==='cyberpunk'?'#090e20':'#09170b';
+    const theme=document.documentElement.dataset.theme||'retro';
+    green=theme==='retro'?'#e5d8b9':theme==='medieval'?'#edc585':theme==='cyberpunk'?'#65eaff':'#92ee73';dim=theme==='retro'?'#9b8a77':theme==='medieval'?'#80664b':theme==='cyberpunk'?'#5a477c':'#37582d';bg=theme==='retro'?'#191411':theme==='medieval'?'#18130f':theme==='cyberpunk'?'#090e20':'#09170b';
     if(theme!=='pipboy'){pixelScene(seconds,theme,document.documentElement.dataset.phase==='work');return;}
     c.clearRect(0,0,400,180);rect(0,0,400,180,bg);
     for(let x=15;x<400;x+=16)for(let y=15;y<175;y+=16)rect(x,y,1,1,'#24411e');

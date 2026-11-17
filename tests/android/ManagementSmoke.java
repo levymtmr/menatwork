@@ -17,8 +17,8 @@ public class ManagementSmoke extends Instrumentation {
   Store store=new Store(c);invoices=new InvoiceStore(c);final InvoiceStore inv=invoices;
   for(File f:invoices.folder().listFiles())f.delete();
   check(store.language().equals("en"),"English default");store.saveLanguage("pt");check(new Store(c).language().equals("pt"),"Portuguese persists");check(Language.text(c,"REMOVER").equals("REMOVER"),"Portuguese native text");store.saveLanguage("en");check(Language.text(c,"REMOVER").equals("REMOVE"),"English native text");bad(()->store.saveLanguage("de"),"invalid language blocked");
-  check(store.theme().equals("pipboy"),"default theme");
-  for(String theme:new String[]{"medieval","cyberpunk","pipboy"}){store.saveTheme(theme);check(new Store(c).theme().equals(theme),"theme persistence "+theme);}
+  check(store.theme().equals("retro"),"default theme");
+  for(String theme:new String[]{"retro","medieval","cyberpunk","pipboy"}){store.saveTheme(theme);check(new Store(c).theme().equals(theme),"theme persistence "+theme);}
   bad(()->store.saveTheme("unknown"),"invalid theme blocked");
   String date=LocalDate.now().minusDays(3).toString();
   store.saveSkill(new JSONObject().put("name","Cladding").put("description","Installation"));String skill=store.skills().getJSONObject(0).getString("id");
@@ -46,7 +46,13 @@ public class ManagementSmoke extends Instrumentation {
   JSONObject ended=store.saveJournal(fix);check(store.session().length()==0,"corrected active clears atomically");check(ended.getLong("workedMs")==28800000,"forgotten stop corrected");check(ended.getLong("endedAt")<System.currentTimeMillis()-86400000,"past end preserved");check(store.progress().getLong("xp")==1500,"corrected active XP");
   store.save(active);store.discardSession();check(store.session().length()==0,"discard clears session");check(store.progress().getLong("xp")==1500,"discard excluded XP");
   // Simulate pre-update records without source snapshots or explicit ISO dates.
-  inv.prefs.edit().remove("sourceSnapshotsV1").commit();InvoiceStore migrated=new InvoiceStore(c);check(migrated.find(filename).has("sourceFingerprints"),"legacy links migrated");check(migrated.nextNumber()>next,"all numbers reserved after migration");
+  JSONObject legacyDraft=inv.draft();legacyDraft.put("rows",new JSONArray().put(new JSONObject().put("date",date).put("address","Legacy manual site").put("hours","1").put("sourceId","")));inv.saveDraft(legacyDraft);
+  inv.prefs.edit().remove("sourceSnapshotsV1").commit();InvoiceStore migrated=new InvoiceStore(c);check(migrated.find(filename).has("sourceFingerprints"),"legacy links migrated");check(migrated.nextNumber()>next,"all numbers reserved after migration");check(migrated.draft().getJSONArray("rows").getJSONObject(0).getString("address").equals("Legacy manual site"),"manual draft survives migration without source");
+  JSONObject lunchShift=new JSONObject().put("id","native-lunch").put("startedAt",System.currentTimeMillis()-28800000).put("phase","pause").put("workedMs",28800000).put("config",store.config()).put("client","Lunch Client").put("workType","Cladding");store.save(lunchShift);
+  bad(()->store.finishWithLunch("native-lunch","pause","481",28800000,System.currentTimeMillis()),"lunch beyond tracked time blocked");check(store.session().has("phase"),"invalid lunch keeps active shift");
+  long lunchEnd=System.currentTimeMillis();store.finishWithLunch("native-lunch","pause","45",28800000,lunchEnd);JSONObject lunchRecord=store.findJournal("native-lunch");check(lunchRecord.getLong("workedMs")==26100000,"45-minute lunch deducted");check(lunchRecord.getLong("trackedWorkedMs")==28800000,"original tracked time retained");check(lunchRecord.getJSONObject("totals").getDouble("gross")==232,"lunch affects income once");check(lunchRecord.getString("client").equals("Lunch Client"),"client retained");check(lunchRecord.getString("workType").equals("Cladding"),"work type retained");check(store.session().length()==0,"lunch finish clears session");
+  bad(()->store.finishWithLunch("native-lunch","pause","45",28800000,lunchEnd),"repeated lunch finish blocked");
+  JSONObject lunchEdit=new JSONObject(p.toString()).put("id","native-lunch").put("hours","8").put("lunchMinutes","45").put("client","Lunch Client").put("workType","Cladding");store.saveJournal(lunchEdit);store.saveJournal(lunchEdit);check(store.findJournal("native-lunch").getLong("workedMs")==26100000,"editing lunch never doubles deduction");
   result.putString("stream","PASS: "+checks+" native journal, XP, invoice cancellation/correction and migration checks.\n");
  }catch(Throwable e){status=0;result.putString("stream","FAIL: "+e+"\n");}
  finally{c.getSharedPreferences("neonshift",0).edit().clear().commit();c.getSharedPreferences("invoice_deck_mobile",0).edit().clear().commit();try{if(invoices!=null)for(File f:invoices.folder().listFiles())f.delete();}catch(Exception ignored){}}

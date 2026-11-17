@@ -1,7 +1,8 @@
 'use strict';
 (() => {
   const $=id=>document.getElementById(id), native=typeof Android!=='undefined';
-  let state,initialized=false,saveTimer,recordsSignature='',editing=false;
+  let state,initialized=false,saveTimer,recordsSignature='',editing=false,limit=20,trashLimit=20;
+  const filters=window.Listing.controls('invoices',()=>{limit=20;trashLimit=20;recordsSignature='';if(state)records();});
   const fields={
     name:'Nome do prestador',address:'Endereço do prestador',email:'E-mail do prestador',abn:'ABN do prestador',
     bank:'Banco',account_name:'Nome da conta',bsb:'BSB',account:'Número da conta',
@@ -32,7 +33,7 @@
   for(const [key,label]of Object.entries(fields))input(label,key,'',$((key.startsWith('client')||key==='description')?'clientFields':'sellerFields'),key.includes('address')||key==='description'?'textarea':key.includes('email')?'email':'text');
   function readDraft(){
     const profile={};for(const key of Object.keys(fields))profile[key]=document.querySelector(`[name="${key}"]`).value.trim();
-    const rows=[...document.querySelectorAll('.invoice-entry')].map(el=>({date:el.querySelector('[name="date"]').value,address:el.querySelector('[name="workAddress"]').value.trim(),hours:el.querySelector('[name="hours"]').value.trim()||'0',sourceId:el.dataset.sourceId||'',sourceFingerprint:el.dataset.sourceFingerprint||''}));
+    const rows=[...document.querySelectorAll('.invoice-entry')].map(el=>({date:el.querySelector('[name="date"]').value,address:el.querySelector('[name="workAddress"]').value.trim(),hours:el.querySelector('[name="hours"]').value.trim()||'0',sourceId:el.dataset.sourceId||'',sourceFingerprint:el.dataset.sourceFingerprint||'',workType:el.dataset.workType||''}));
     return {number:Number($('invoiceNumber').value),rate:$('invoiceRate').value.trim().replace(',','.'),profile,rows};
   }
   function updateTotals(){
@@ -43,7 +44,7 @@
   function save(){clearTimeout(saveTimer);if(native&&initialized)cmd('saveInvoiceDraft',readDraft());}
   function changed(){editing=true;updateTotals();clearTimeout(saveTimer);saveTimer=setTimeout(save,500);}
   function addRow(row={date:today(),address:'',hours:'0',sourceId:''},persist=true){
-    const box=text('div','','invoice-entry');box.dataset.sourceId=row.sourceId||'';box.dataset.sourceFingerprint=row.sourceFingerprint||'';
+    const box=text('div','','invoice-entry');box.dataset.sourceId=row.sourceId||'';box.dataset.sourceFingerprint=row.sourceFingerprint||'';box.dataset.workType=row.workType||'';
     const top=text('div','','entry-top');top.append(text('span',row.sourceId?'JORNADA DO HISTÓRICO':'LANÇAMENTO MANUAL'));
     const remove=text('button','×','remove-entry');remove.type='button';remove.setAttribute('aria-label','Remover lançamento');remove.onclick=()=>{box.remove();changed();};top.append(remove);box.append(top);
     const grid=text('div','','invoice-grid');input('Data','date',row.date,grid,'date');const h=input('Horas reais','hours',row.hours,grid);h.inputMode='decimal';h.maxLength=32;box.append(grid);
@@ -67,11 +68,11 @@
   function perform(action){error('');try{const draft=validDraft();clearTimeout(saveTimer);cmd(action,draft);}catch(e){error(e.message);}}
   function recordButton(label,action,filename,cls='secondary',extra={}){const b=text('button',label,'button '+cls);b.onclick=()=>{clearTimeout(saveTimer);cmd(action,{filename,...extra});};return b;}
   function records(){
-    const list=state.invoices||[],signature=JSON.stringify(list);if(signature===recordsSignature)return;recordsSignature=signature;
-    const active=list.filter(r=>r.status!=='cancelled'),removed=list.filter(r=>r.status==='cancelled');
+    const list=state.invoices||[],signature=JSON.stringify([list,state.history,filters,limit,trashLimit,window.I18n.language()]);if(signature===recordsSignature)return;recordsSignature=signature;
+    const active=window.Listing.invoices(list.filter(r=>r.status!=='cancelled'),filters,state),removed=window.Listing.invoices(list.filter(r=>r.status==='cancelled'),filters,state);$('invoiceCount').textContent=Math.min(limit,active.length)+' / '+active.length+' invoices';$('invoiceMore').classList.toggle('hidden',active.length<=limit);$('invoiceTrashMore').classList.toggle('hidden',removed.length<=trashLimit);
     const total=items=>items.reduce((sum,r)=>sum+Math.round(Number(r.total)*100),0);$('invoiceLedgerTotals').textContent=active.length+' invoices · AUD '+cash(total(active))+'\nPagos: '+cash(total(active.filter(r=>r.paid)))+' · A receber: '+cash(total(active.filter(r=>!r.paid)));
     $('invoiceTrash').classList.toggle('hidden',!removed.length);$('invoiceTrashCount').textContent=removed.length;
-    for(const [target,items] of [[$('invoiceRecords'),active],[$('invoiceTrashList'),removed]]){
+    for(const [target,items] of [[$('invoiceRecords'),active.slice(0,limit)],[$('invoiceTrashList'),removed.slice(0,trashLimit)]]){
       target.replaceChildren();if(!items.length)target.append(text('p','Nenhum invoice neste grupo.','empty'));
       for(const r of items){
         const cancelled=r.status==='cancelled',card=text('article','','panel history-card');card.append(text('h3','INVOICE #'+String(r.number).padStart(3,'0')),userText(text('p',r.client,'muted')),text('p',cash(Math.round(Number(r.total)*100)),'history-net'),text('p','Emissão: '+r.issued+' · AUD','muted'));
@@ -89,7 +90,7 @@
     }
   }
   window.InvoiceUI={
-    render(s){state=s;if(!initialized)populate(s.invoiceDraft||{profile:window.invoiceDefaults.profile,number:s.nextInvoiceNumber||window.invoiceDefaults.nextNumber,rate:window.invoiceDefaults.profile.rate,rows:[]});$('invoiceDate').textContent=today();const data=s.invoiceAddresses||window.invoiceDefaults.addresses;if(!$('worksites').children.length){for(const value of [...data,'Day off']){const o=document.createElement('option');o.value=value;$('worksites').append(o);}}records();},
+    render(s){state=s;window.Listing.options($('invoices-client'),(s.invoices||[]).map(r=>r.client));window.Listing.options($('invoices-type'),(s.invoices||[]).flatMap(r=>window.Listing.invoiceTypes(r,s)));if(!initialized)populate(s.invoiceDraft||{profile:window.invoiceDefaults.profile,number:s.nextInvoiceNumber||window.invoiceDefaults.nextNumber,rate:window.invoiceDefaults.profile.rate,rows:[]});$('invoiceDate').textContent=today();const data=s.invoiceAddresses||window.invoiceDefaults.addresses;if(!$('worksites').children.length){for(const value of [...data,'Day off']){const o=document.createElement('option');o.value=value;$('worksites').append(o);}}records();},
     addJourney(s){
       const d=readDraft(),id=String(s.id||s.startedAt);
       if(s.config&&s.config.currency!=='AUD'){error('A jornada usa outra moeda. Preencha manualmente uma tarifa em AUD; o app não converte moedas.');return false;}
@@ -97,11 +98,13 @@
       const already=(state.invoices||[]).find(r=>r.status!=='cancelled'&&(r.sourceIds||[]).includes(id));
       if(already||d.rows.some(r=>r.sourceId===id)){error('Essa jornada já foi adicionada a um invoice.');return false;}
       const date=s.workDate||new Intl.DateTimeFormat('en-CA',{timeZone:'Australia/Adelaide',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(s.startedAt));
-      error('');addRow({date,address:s.worksite||'',hours:(s.workedMs/3600000).toFixed(10).replace(/0+$/,'').replace(/\.$/,''),sourceId:id,sourceFingerprint:s.billingFingerprint||''});return true;
+      error('');addRow({date,address:s.worksite||'',hours:(s.workedMs/3600000).toFixed(10).replace(/0+$/,'').replace(/\.$/,''),sourceId:id,sourceFingerprint:s.billingFingerprint||'',workType:s.workType||''});return true;
     }
   };
   window.invoiceIssued=()=>{clearTimeout(saveTimer);initialized=false;editing=false;recordsSignature='';error('');};
   $('invoices').addEventListener('input',e=>{if(e.target.matches('input,textarea'))changed();});
+  $('invoiceMore').onclick=()=>{limit+=20;recordsSignature='';records();};$('invoiceTrashMore').onclick=()=>{trashLimit+=20;recordsSignature='';records();};
+  new IntersectionObserver(entries=>{if(entries.some(e=>e.isIntersecting)&&!$('invoices').classList.contains('hidden')&&!$('invoiceMore').classList.contains('hidden'))$('invoiceMore').click();},{root:document.querySelector('main'),rootMargin:'120px'}).observe($('invoiceMore'));
   $('invoiceRefreshSources').onclick=()=>{clearTimeout(saveTimer);cmd('refreshInvoiceSources',readDraft());};
   $('invoiceAddRow').onclick=()=>addRow();$('invoicePreview').onclick=()=>perform('previewInvoice');$('invoiceIssue').onclick=()=>perform('issueInvoice');$('invoiceClear').onclick=()=>{clearTimeout(saveTimer);cmd('newInvoiceDraft');};
   document.addEventListener('visibilitychange',()=>{if(document.hidden&&editing)save();});

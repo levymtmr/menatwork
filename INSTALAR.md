@@ -2,7 +2,7 @@
 
 Se já usa a versão anterior, instale o novo APK por cima dela e escolha **Atualizar**. Não desinstale: assim seus registros e ajustes são preservados.
 
-1. Copie `neon-shift-1.5.0.apk` para o celular, por cabo USB ou outro meio de sua preferência.
+1. Copie `neon-shift-1.6.0.apk` para o celular, por cabo USB ou outro meio de sua preferência.
 2. Abra o APK pelo aplicativo **Meus Arquivos**. Se o Android pedir, permita instalar aplicativos dessa fonte e volte para concluir a instalação.
 3. Abra **Menatwork** e entre em **Ajustes**. Configure sua moeda, hora de trabalho, imposto estimado, consumo do carro, preço da gasolina e custos por km. Os valores iniciais são exemplos.
 4. Ao sair para trabalhar, toque em **Iniciar trajeto ao trabalho**. Permita localização precisa e notificações quando solicitado. O GPS funciona melhor ao ar livre.
@@ -58,3 +58,12 @@ Em **Ajustes → Temas**, escolha Pip-Boy, Medieval ou Cyberpunk. A escolha fica
 O Histórico mostra se a jornada está no rascunho, em um invoice emitido ou paga. Remover a linha do rascunho ou cancelar o invoice remove seu vínculo. No invoice emitido, use **Marcar como pago**; suas jornadas também receberão a marca de pagamento. **Marcar como não pago** desfaz essa ação. O resumo mostra quanto foi pago e quanto falta receber.
 
 O idioma inicial é inglês. Em **Settings → App language**, selecione **Português** se preferir. O PDF do invoice continua sempre em inglês.
+
+
+## Almoço e filtros (1.6.0)
+
+Ao encerrar, escolha se houve almoço não pago e quantos minutos descontar (45 sugeridos ao escolher Sim). Não precisa pausar para o almoço. Se já havia excluído esse tempo por pausa ou ajuste, não desconte novamente. O campo de almoço também existe no editor de um dia salvo.
+
+Em Hoje → Ajustar jornada e custos, informe cliente e tipo de trabalho. Você também pode completar esses campos no Histórico. Abra Filtros e busca para listar por semana, mês, datas, cliente, tipo e situação. Role até o fim para carregar os próximos 20 registros, ou use Carregar mais. O mesmo vale para invoices.
+
+O novo tema é Retro Console, em Settings → Themes. Escolhas de tema anteriores são mantidas na atualização; basta selecionar Retro Console para usar o novo visual.

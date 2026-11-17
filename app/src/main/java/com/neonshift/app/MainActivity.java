@@ -93,7 +93,7 @@ public class MainActivity extends Activity {
     }
     @SuppressWarnings("deprecation")
     private void applyTheme() {
-        int color=Color.parseColor("medieval".equals(store.theme())?"#18130f":"cyberpunk".equals(store.theme())?"#090e20":"#08120a");
+        int color=Color.parseColor("medieval".equals(store.theme())?"#18130f":"cyberpunk".equals(store.theme())?"#090e20":"retro".equals(store.theme())?"#191411":"#08120a");
         getWindow().setStatusBarColor(color);getWindow().setNavigationBarColor(color);
         web.setBackgroundColor(color);root.setBackgroundColor(color);
     }
@@ -243,10 +243,7 @@ public class MainActivity extends Activity {
                     } else if (Arrays.asList("commute", "work", "pause", "resume", "return", "recover").contains(action)) {
                         dispatch(action);
                     } else if ("finish".equals(action)) {
-                        new AlertDialog.Builder(MainActivity.this).setTitle(tr("Salvar e encerrar?"))
-                            .setMessage(tr("Confira a distância e os gastos extras. O registro será salvo no histórico."))
-                            .setPositiveButton(tr("Salvar jornada"), (d, w) -> dispatch("finish"))
-                            .setNegativeButton(tr("Voltar"), null).show();
+                        askLunch();
                     } else if ("saveConfig".equals(action)) {
                         validateConfig(p);
                         store.saveConfig(p);
@@ -260,6 +257,9 @@ public class MainActivity extends Activity {
                         String worksite = p.optString("worksite", s.optString("worksite", "")).trim();
                         if (worksite.length() > 1000) throw new IllegalArgumentException("Local de trabalho muito longo.");
                         Store.put(s, "worksite", worksite);
+                        String client=p.optString("client",s.optString("client")).trim(),workType=p.optString("workType",s.optString("workType")).trim();
+                        if(client.length()>160||workType.length()>100)throw new IllegalArgumentException("Confira o cliente e o tipo de trabalho.");
+                        Store.put(s,"client",client);Store.put(s,"workType",workType);
                         if (p.has("workedMs")) {
                             double ms = p.getDouble("workedMs");
                             if (!CostEngine.valid(ms, 360000000000.0)) throw new IllegalArgumentException("Confira as horas informadas.");
@@ -278,6 +278,23 @@ public class MainActivity extends Activity {
                 } catch (Exception e) { invoiceError(e); }
             });
         }
+    }
+    private void askLunch() {
+        JSONObject captured=store.session();if(!captured.has("phase"))return;
+        final String key=Store.id(captured),phase=captured.optString("phase");final long tracked=Store.elapsed(captured),endedAt=System.currentTimeMillis();
+        android.widget.LinearLayout body=new android.widget.LinearLayout(this);body.setOrientation(1);int pad=(int)(24*getResources().getDisplayMetrics().density);body.setPadding(pad,8,pad,0);
+        android.widget.RadioGroup options=new android.widget.RadioGroup(this);
+        android.widget.RadioButton yes=new android.widget.RadioButton(this),no=new android.widget.RadioButton(this);yes.setId(View.generateViewId());no.setId(View.generateViewId());yes.setText(tr("Sim, descontar almoço"));no.setText(tr("Não tive almoço não pago"));options.addView(yes);options.addView(no);body.addView(options);
+        android.widget.EditText minutes=new android.widget.EditText(this);minutes.setInputType(android.text.InputType.TYPE_CLASS_NUMBER|android.text.InputType.TYPE_NUMBER_FLAG_DECIMAL);minutes.setText("45");minutes.setHint(tr("Minutos não pagos"));minutes.setContentDescription(tr("Minutos não pagos"));minutes.setVisibility(View.GONE);body.addView(minutes);
+        android.widget.TextView note=new android.widget.TextView(this);note.setText(tr("Informe apenas minutos que ainda não foram descontados."));note.setPadding(0,12,0,12);body.addView(note);
+        options.setOnCheckedChangeListener((group,id)->minutes.setVisibility(id==yes.getId()?View.VISIBLE:View.GONE));
+        AlertDialog dialog=new AlertDialog.Builder(this).setTitle(tr("Teve almoço neste turno? (não pago)" )).setView(body).setPositiveButton(tr("Salvar jornada"),null).setNegativeButton(tr("Voltar"),null).create();
+        dialog.setOnShowListener(d->dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v->{
+            if(options.getCheckedRadioButtonId()==-1){message("Escolha se teve almoço.");return;}
+            try{String value=options.getCheckedRadioButtonId()==yes.getId()?minutes.getText().toString().trim():"0";
+                store.finishWithLunch(key,phase,value,tracked,endedAt);stopService(new Intent(this,ShiftService.class));callback("journalSaved");dialog.dismiss();message("Jornada salva.");
+            }catch(Exception e){minutes.setError(tr(e.getMessage()));message(e.getMessage());}
+        }));dialog.show();
     }
     private interface Work { void run() throws Exception; }
     private void confirm(String title,String text,Work work) {

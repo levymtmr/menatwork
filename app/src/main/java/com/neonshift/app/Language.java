@@ -17,7 +17,7 @@ final class Language {
   if(value==null||"pt".equals(c.getSharedPreferences("neonshift",0).getString("language","en")))return value;
   Map<String,String> words=dictionary(c);if(words.containsKey(value))return words.get(value);
   List<String> keys=new ArrayList<>(words.keySet());keys.sort((a,b)->Integer.compare(b.length(),a.length()));List<String> slots=new ArrayList<>();String out=value;
-  for(String key:keys)if(out.contains(key)){String marker="\u0001"+slots.size()+"\u0002";out=out.replace(key,marker);slots.add(words.get(key));}
+  for(String key:keys)if(key.length()>3&&out.contains(key)){String marker="\u0001"+slots.size()+"\u0002";out=out.replace(key,marker);slots.add(words.get(key));}
   for(int n=0;n<slots.size();n++)out=out.replace("\u0001"+n+"\u0002",slots.get(n));return out;
  }
 }

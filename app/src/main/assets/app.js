@@ -98,11 +98,11 @@
     if(window.InvoiceUI)window.InvoiceUI.render(state);
     if(window.AppUpdateUI)window.AppUpdateUI.render(state.update);
   }
-  $('editCosts').onclick=()=>{editorOpen=!editorOpen;$('costEditor').classList.toggle('hidden',!editorOpen);if(editorOpen){$('manualWorksite').value=state.session.worksite||'';$('manualKm').value=String(Math.round((state.session.km||0)*1000)/1000).replace('.',',');$('manualExtras').value=String(state.session.extras||0).replace('.',',');$('manualHours').value=String(Math.round(state.totals.workedMs/3600000*10000)/10000).replace('.',',');}};
+  $('editCosts').onclick=()=>{editorOpen=!editorOpen;$('costEditor').classList.toggle('hidden',!editorOpen);if(editorOpen){$('manualClient').value=state.session.client||'';$('manualWorkType').value=state.session.workType||'';$('manualWorksite').value=state.session.worksite||'';$('manualKm').value=String(Math.round((state.session.km||0)*1000)/1000).replace('.',',');$('manualExtras').value=String(state.session.extras||0).replace('.',',');$('manualHours').value=String(Math.round(state.totals.workedMs/3600000*10000)/10000).replace('.',',');}};
   $('saveCosts').onclick=()=>{
     const km=number($('manualKm').value),extras=number($('manualExtras').value),hours=number($('manualHours').value);
     if(!Number.isFinite(km)||km>100000||!Number.isFinite(extras)||extras>1000000||!Number.isFinite(hours)||hours>100000){toast('Informe distância, gastos e horas válidos, usando vírgula ou ponto.');return;}
-    command('updateCosts',{km,extras,workedMs:Math.round(hours*3600000),worksite:$('manualWorksite').value.trim()});editorOpen=false;$('costEditor').classList.add('hidden');
+    command('updateCosts',{km,extras,workedMs:Math.round(hours*3600000),worksite:$('manualWorksite').value.trim(),client:$('manualClient').value.trim(),workType:$('manualWorkType').value.trim()});editorOpen=false;$('costEditor').classList.add('hidden');
   };
   $('settingsForm').oninput=()=>{settingsDirty=true;};
   $('settingsForm').onsubmit=e=>{

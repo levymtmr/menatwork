@@ -1,12 +1,26 @@
-# Menatwork 1.5.0
+# Menatwork 1.6.0
 
 Aplicativo Android pessoal, em português, para acompanhar o ganho líquido estimado de uma jornada de trabalho. Interface de terminal retrofuturista inspirada no Pip-Boy: fósforo verde, linhas sutis de CRT, painéis monocromáticos e trabalhador animado. Ilustrações originais desenhadas em canvas.
 
 ## Instalar
 
-O instalador fica em `dist/neon-shift-1.5.0.apk`. Veja `INSTALAR.md`.
+O instalador fica em `dist/neon-shift-1.6.0.apk`. Veja `INSTALAR.md`.
 
 Compatível com Android 8.0 ou superior, incluindo o Galaxy S22 Ultra. O APK usa apenas Java e APIs do Android, sem bibliotecas nativas, conta no aplicativo ou servidor de registros. O GitHub hospeda as atualizações públicas. A interface é local em WebView; o GPS, a persistência e o acompanhamento em segundo plano são nativos.
+
+## Almoço, filtros e Retro Console (1.6.0)
+
+**Encerrar** pergunta se houve almoço não pago. Escolha Sim ou Não; ao escolher Sim, o campo sugere 45 minutos, que podem ser alterados. O fim do trabalho é capturado ao abrir a pergunta; responder não acrescenta tempo pago. Cancelar mantém a jornada ativa. Na opção de registrar a volta, o almoço é informado ao salvar a jornada, usando apenas as horas de trabalho já encerradas.
+
+O app registra o tempo anterior ao almoço e subtrai os minutos não pagos uma vez. Assim, 8h − 45 min = 7h15 pagas; a AUD 32/h, o bruto é AUD 232. Ganhos, XP e horas levadas ao invoice usam o tempo pago. O almoço não vira uma segunda despesa em dinheiro. Se já pausou ou ajustou o tempo para excluir o almoço, informe apenas minutos ainda não descontados ou escolha Não. Em jornadas manuais, informe horas antes do almoço ou início/término, outras pausas e os minutos de almoço separadamente. Editar e salvar novamente não repete o desconto.
+
+**Histórico** e **invoices** têm busca, esta semana/semana passada (segunda a domingo), este mês ou datas personalizadas, cliente, tipo de trabalho, situação e ordenação. O período do histórico usa a data do trabalho; o de invoices usa a data de emissão. Os resumos correspondem aos registros filtrados. O botão CSV continua exportando todas as jornadas válidas. As listas mostram inicialmente 20 registros e carregam mais ao rolar, com botão alternativo. Lixeiras também carregam em blocos.
+
+Cliente e tipo podem ser informados em **Hoje → Ajustar jornada e custos** ou ao criar/editar um dia. Para registros anteriores, os filtros também reconhecem clientes de invoices vinculados e habilidades já atribuídas. O cliente do invoice continua sendo o perfil escolhido no rascunho; o campo de classificação da jornada não substitui os dados do documento.
+
+O novo padrão **Retro Console** segue a direção de instrumentos retrofuturistas da referência indicada pelo usuário: blocos creme, coral e âmbar, bordas arredondadas e mostrador circular desenhado em canvas. Não incorpora imagens de terceiros. As escolhas explícitas de tema já salvas são preservadas; o novo padrão vale quando não há escolha salva. Pode selecioná-lo a qualquer momento em Settings → Themes. O PDF continua em inglês e mantém o modelo original.
+
+Versão 1.6.0 / versionCode 7. Testes de filtros em Node podem usar `NODE_BIN` para indicar o executável local.
 
 ## Temas e pagamentos (1.5.0)
 

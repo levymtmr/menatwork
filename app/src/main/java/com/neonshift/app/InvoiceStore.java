@@ -33,7 +33,7 @@ final class InvoiceStore {
                 r.put("sourceFingerprints",fingerprints);
             }
             JSONArray rows=draft.optJSONArray("rows");
-            if(rows!=null)for(int n=0;n<rows.length();n++){JSONObject row=rows.getJSONObject(n);JSONObject source=journals.findJournal(row.optString("sourceId"));if(source!=null)row.put("sourceFingerprint",Store.fingerprint(source));}
+            if(rows!=null)for(int n=0;n<rows.length();n++){JSONObject row=rows.getJSONObject(n);JSONObject source=journals.findJournal(row.optString("sourceId"));if(source!=null){row.put("sourceFingerprint",Store.fingerprint(source));row.put("workType",source.optString("workType"));}}
             if(!prefs.edit().putString("records",records.toString()).putString("draft",draft.toString()).putBoolean("sourceSnapshotsV1",true).commit())throw new IOException();
         } catch(Exception e){throw new IllegalStateException("Não foi possível preparar os vínculos dos invoices.");}
     }
@@ -203,7 +203,7 @@ final class InvoiceStore {
                 JSONObject source=journals.findJournal(id);if(source==null||source.optBoolean("deleted"))continue;
                 row.put("date",Store.date(source));row.put("hours",java.math.BigDecimal.valueOf(source.optLong("workedMs")).divide(new java.math.BigDecimal("3600000"),12,java.math.RoundingMode.HALF_UP).stripTrailingZeros().toPlainString());
                 if(!source.optString("worksite").trim().isEmpty())row.put("address",source.optString("worksite"));
-                row.put("sourceFingerprint",Store.fingerprint(source));
+                row.put("sourceFingerprint",Store.fingerprint(source));row.put("workType",source.optString("workType"));
             }
             updated.put(row);
         }

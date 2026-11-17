@@ -26,11 +26,11 @@ final class Store {
         if(!prefs.edit().putString("language",value).commit())throw new IllegalStateException("Não foi possível salvar o idioma.");
     }
     String theme() {
-        String value=prefs.getString("theme","pipboy");
-        return Arrays.asList("pipboy","medieval","cyberpunk").contains(value)?value:"pipboy";
+        String value=prefs.getString("theme","retro");
+        return Arrays.asList("retro","pipboy","medieval","cyberpunk").contains(value)?value:"retro";
     }
     void saveTheme(String value) {
-        if(!Arrays.asList("pipboy","medieval","cyberpunk").contains(value))throw new IllegalArgumentException("Tema inválido.");
+        if(!Arrays.asList("retro","pipboy","medieval","cyberpunk").contains(value))throw new IllegalArgumentException("Tema inválido.");
         if(!prefs.edit().putString("theme",value).commit())throw new IllegalStateException("Não foi possível salvar o tema.");
     }
     JSONObject config() {
@@ -142,10 +142,13 @@ final class Store {
         JSONObject cfg=p.getJSONObject("config");validateConfig(cfg);
         double km=p.getDouble("km"),extras=p.getDouble("extras");
         if(!CostEngine.valid(km,100000)||!CostEngine.valid(extras,1000000))throw new IllegalArgumentException("Confira a distância e os gastos extras.");
-        String worksite=p.optString("worksite").trim(),notes=p.optString("notes").trim();
+        String worksite=p.optString("worksite").trim(),notes=p.optString("notes").trim(),client=p.optString("client").trim(),workType=p.optString("workType").trim();
+        if(client.length()>160||workType.length()>100)throw new IllegalArgumentException("Confira o cliente e o tipo de trabalho.");
         if(worksite.length()>1000||notes.length()>1000)throw new IllegalArgumentException("Local e observações aceitam até 1.000 caracteres.");
         put(record,"id",key);put(record,"workDate",day);put(record,"entryMode",mode);
-        put(record,"startedAt",e.startedAt);put(record,"endedAt",e.endedAt);put(record,"workedMs",e.workedMs);
+        String lunch=p.optString("lunchMinutes","0");long paid=LunchEngine.paid(e.workedMs,lunch);
+        put(record,"startedAt",e.startedAt);put(record,"endedAt",e.endedAt);put(record,"trackedWorkedMs",e.workedMs);put(record,"lunchMinutes",new java.math.BigDecimal(lunch.trim().replace(',','.')).stripTrailingZeros().toPlainString());put(record,"workedMs",paid);
+        put(record,"client",client);put(record,"workType",workType);
         put(record,"startTime",p.optString("startTime"));put(record,"endTime",p.optString("endTime"));put(record,"nextDay",p.optBoolean("nextDay"));put(record,"breakMinutes",p.optString("breakMinutes","0"));
         put(record,"config",cfg);put(record,"km",km);put(record,"extras",extras);put(record,"worksite",worksite);put(record,"notes",notes);
         put(record,"skillIds",validSkillIds(p.optJSONArray("skillIds")));put(record,"phase","done");put(record,"deleted",false);
@@ -156,6 +159,15 @@ final class Store {
         SharedPreferences.Editor edit=prefs.edit().putString("history",out.toString());if(active)edit.putString("session","{}");
         if(!edit.commit())throw new IllegalStateException("Não foi possível salvar o dia de trabalho.");
         return record;
+    }
+    void finishWithLunch(String key,String phase,String minutes,long trackedMs,long endedAt) throws Exception {
+        JSONObject s=session();
+        if(!s.has("phase")||!id(s).equals(key)||!s.optString("phase").equals(phase))throw new IllegalArgumentException("A jornada em andamento mudou. Abra a correção novamente.");
+        if(trackedMs<0||trackedMs>elapsed(s)||endedAt>System.currentTimeMillis())throw new IllegalArgumentException("Confira o tempo registrado.");
+        long paid=LunchEngine.paid(trackedMs,minutes);
+        put(s,"trackedWorkedMs",trackedMs);put(s,"lunchMinutes",new java.math.BigDecimal(minutes.trim().replace(',','.')).stripTrailingZeros().toPlainString());
+        put(s,"workedMs",paid);put(s,"phase","done");put(s,"endedAt",endedAt);put(s,"totals",totals(s,config()));
+        s.remove("lastLat");s.remove("lastLon");s.remove("lastFix");finish(s);
     }
     JSONObject progress() {
         JSONArray history=history(),skills=skills();Map<String,Long> perSkill=new HashMap<>();long confirmed=0;
