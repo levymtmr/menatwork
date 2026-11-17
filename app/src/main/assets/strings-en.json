@@ -498,5 +498,7 @@
   "Confira o e-mail do cliente.": "Check the client email address.",
   "Já existe um cliente com esse nome. Escolha o cliente cadastrado ou edite os dados dele.": "A client with this name already exists. Choose the registered client or edit their details.",
   "Cliente não encontrado.": "Client not found.",
-  "Não foi possível salvar o cliente.": "Could not save the client."
+  "Não foi possível salvar o cliente.": "Could not save the client.",
+  "Valor da hora do cliente": "Client hourly rate",
+  "Confira o valor da hora do cliente.": "Check the client hourly rate."
 }

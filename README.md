@@ -194,3 +194,7 @@ Também há arquivos Gradle para abrir no Android Studio (AGP 8.9.2, JDK 17, Gra
 Para executar os testes de interface, instale Playwright e Chromium no ambiente de desenvolvimento e rode `node tests/ui.cjs`. Eles não substituem testes de GPS em um aparelho real.
 
 As permissões e os tipos de serviço seguem a [documentação oficial de foreground services](https://developer.android.com/develop/background-work/services/fgs/service-types).
+
+### Tarifa por cliente (1.7.1)
+
+Defina o valor por hora em Ajustes → Clientes → Editar. Ao selecionar o cliente, a tarifa é preenchida na jornada ou no invoice. A troca de cliente no editor da jornada ativa aplica a tarifa ao salvar. Alterar o cadastro não modifica jornadas já registradas nem invoices emitidos.

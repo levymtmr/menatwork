@@ -266,6 +266,7 @@ public class MainActivity extends Activity {
                         Store.put(s, "worksite", worksite);
                         String client=p.optString("client",s.optString("client")).trim(),workType=p.optString("workType",s.optString("workType")).trim();
                         if(client.length()>160||workType.length()>100)throw new IllegalArgumentException("Confira o cliente e o tipo de trabalho.");
+                        if(!ClientRegistry.key(client).equals(ClientRegistry.key(s.optString("client")))){Double rate=clients.hourly(client);if(rate!=null){JSONObject cfg=s.optJSONObject("config");if(cfg==null)cfg=store.config();Store.put(cfg,"hourly",rate);Store.put(s,"config",cfg);}}
                         Store.put(s,"client",client);Store.put(s,"workType",workType);
                         if (p.has("workedMs")) {
                             double ms = p.getDouble("workedMs");

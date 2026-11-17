@@ -21,6 +21,7 @@ final class ClientRegistry {
   JSONObject client=new JSONObject();Store.put(client,"id",UUID.randomUUID().toString());Store.put(client,"client",name);
   for(String field:new String[]{"client_address","client_email","client_abn"})Store.put(client,field,source.optString(field));map.put(key,client);
  }
+ Double hourly(String name){JSONArray all=list();for(int n=0;n<all.length();n++){JSONObject item=all.optJSONObject(n);if(item!=null&&key(item.optString("client")).equals(key(name))&&item.has("hourly"))return item.optDouble("hourly");}return null;}
  JSONArray list(){try{return new JSONArray(prefs.getString("clients","[]"));}catch(Exception e){throw new IllegalStateException("Não foi possível carregar o cadastro de clientes.");}}
  void remember(JSONObject profile) throws Exception {
   String name=profile.optString("client").trim();if(name.isEmpty()||name.length()>120||Arrays.asList("client name","nome do cliente / client name").contains(key(name)))return;
@@ -34,9 +35,11 @@ final class ClientRegistry {
   String id=input.optString("id"),name=input.optString("client").trim(),address=input.optString("client_address").trim(),email=input.optString("client_email").trim(),abn=input.optString("client_abn").trim();
   if(name.isEmpty()||name.length()>120||address.length()>350||email.length()>160||abn.length()>40)throw new IllegalArgumentException("Confira o nome e os dados do cliente.");
   if(!email.isEmpty()&&!email.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+"))throw new IllegalArgumentException("Confira o e-mail do cliente.");
+  Double hourly=null;if(input.has("hourly")&&!input.isNull("hourly")){hourly=Double.valueOf(input.getString("hourly").replace(',','.'));if(!Double.isFinite(hourly)||hourly<=0||hourly>10000)throw new IllegalArgumentException("Confira o valor da hora do cliente.");}
   JSONArray all=list();JSONObject saved=null;
   for(int n=0;n<all.length();n++){JSONObject item=all.getJSONObject(n);if(item.optString("id").equals(id))saved=item;else if(key(item.getString("client")).equals(key(name)))throw new IllegalArgumentException("Já existe um cliente com esse nome. Escolha o cliente cadastrado ou edite os dados dele.");}
   if(saved==null){if(!id.isEmpty())throw new IllegalArgumentException("Cliente não encontrado.");saved=new JSONObject();saved.put("id",UUID.randomUUID().toString());all.put(saved);}
+  if(hourly!=null)saved.put("hourly",hourly);
   saved.put("client",name);saved.put("client_address",address);saved.put("client_email",email);saved.put("client_abn",abn);
   if(!prefs.edit().putString("clients",all.toString()).commit())throw new IllegalStateException("Não foi possível salvar o cliente.");return new JSONObject(saved.toString());
  }
