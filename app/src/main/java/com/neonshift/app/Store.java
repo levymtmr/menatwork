@@ -76,7 +76,8 @@ final class Store {
             .atZone(ZoneId.systemDefault()).toLocalDate().toString());
     }
     static String fingerprint(JSONObject record) {
-        return date(record)+"|"+record.optLong("workedMs")+"|"+record.optString("worksite","").trim();
+        JSONObject cfg=record.optJSONObject("config"),totals=record.optJSONObject("totals");String extra=cfg!=null&&cfg.optBoolean("overtime")?"|ot:"+cfg.optDouble("hourly")+":"+(totals==null?0:totals.optDouble("overtimePremium",0)):"";
+        return date(record)+"|"+record.optLong("workedMs")+"|"+record.optString("worksite","").trim()+extra;
     }
     JSONObject findJournal(String id) {
         JSONArray all=history();
@@ -153,6 +154,7 @@ final class Store {
         String day=p.getString("workDate"),mode=p.optString("entryMode","hours");
         JournalEngine.Entry e=JournalEngine.plan(day,mode,p.optString("hours","0"),p.optString("startTime"),p.optString("endTime"),p.optBoolean("nextDay"),p.optString("breakMinutes","0"),ZoneId.systemDefault(),System.currentTimeMillis());
         JSONObject cfg=p.getJSONObject("config");validateConfig(cfg);
+        if(cfg.optBoolean("overtime")&&(!"times".equals(mode)||Double.parseDouble(p.optString("breakMinutes","0").replace(',','.'))!=0))throw new IllegalArgumentException("Para overtime, informe início e término e use o campo de almoço para o intervalo não pago.");
         double km=p.getDouble("km"),extras=p.getDouble("extras");
         if(!CostEngine.valid(km,100000)||!CostEngine.valid(extras,1000000))throw new IllegalArgumentException("Confira a distância e os gastos extras.");
         String worksite=p.optString("worksite").trim(),notes=p.optString("notes").trim(),client=p.optString("client").trim(),workType=p.optString("workType").trim();
@@ -161,6 +163,7 @@ final class Store {
         put(record,"id",key);put(record,"workDate",day);put(record,"entryMode",mode);
         String lunch=p.optString("lunchMinutes","0");long paid=LunchEngine.paid(e.workedMs,lunch);
         put(record,"startedAt",e.startedAt);put(record,"endedAt",e.endedAt);put(record,"trackedWorkedMs",e.workedMs);put(record,"lunchMinutes",new java.math.BigDecimal(lunch.trim().replace(',','.')).stripTrailingZeros().toPlainString());put(record,"workedMs",paid);
+        put(record,"lunchStart",p.optString("lunchStart","12:00"));put(record,"workZone",ZoneId.systemDefault().getId());record.remove("workIntervals");
         put(record,"client",client);put(record,"workType",workType);
         put(record,"startTime",p.optString("startTime"));put(record,"endTime",p.optString("endTime"));put(record,"nextDay",p.optBoolean("nextDay"));put(record,"breakMinutes",p.optString("breakMinutes","0"));
         put(record,"config",cfg);put(record,"km",km);put(record,"extras",extras);put(record,"worksite",worksite);put(record,"notes",notes);
@@ -173,11 +176,13 @@ final class Store {
         if(!edit.commit())throw new IllegalStateException("Não foi possível salvar o dia de trabalho.");
         return record;
     }
-    void finishWithLunch(String key,String phase,String minutes,long trackedMs,long endedAt) throws Exception {
+    void finishWithLunch(String key,String phase,String minutes,long trackedMs,long endedAt) throws Exception {finishWithLunch(key,phase,minutes,trackedMs,endedAt,"12:00");}
+    void finishWithLunch(String key,String phase,String minutes,long trackedMs,long endedAt,String lunchStart) throws Exception {
         JSONObject s=session();
         if(!s.has("phase")||!id(s).equals(key)||!s.optString("phase").equals(phase))throw new IllegalArgumentException("A jornada em andamento mudou. Abra a correção novamente.");
         if(trackedMs<0||trackedMs>elapsed(s)||endedAt>System.currentTimeMillis())throw new IllegalArgumentException("Confira o tempo registrado.");
         long paid=LunchEngine.paid(trackedMs,minutes);
+        if("work".equals(phase))closeInterval(s,endedAt);put(s,"lunchStart",lunchStart);
         put(s,"trackedWorkedMs",trackedMs);put(s,"lunchMinutes",new java.math.BigDecimal(minutes.trim().replace(',','.')).stripTrailingZeros().toPlainString());
         put(s,"workedMs",paid);put(s,"phase","done");put(s,"endedAt",endedAt);put(s,"totals",totals(s,config()));
         s.remove("lastLat");s.remove("lastLon");s.remove("lastFix");finish(s);
@@ -212,16 +217,35 @@ final class Store {
         put(s, "segmentUptime", android.os.SystemClock.elapsedRealtime());
         put(s, "segmentBoot", currentBoot);
     }
+    static void closeInterval(JSONObject s,long end){
+        if(!"work".equals(s.optString("phase")))return;JSONArray spans=s.optJSONArray("workIntervals");if(spans==null)spans=new JSONArray();
+        long start=s.optLong("segmentStart",s.optLong("workStartedAt",end));spans.put(new JSONArray().put(start).put(Math.max(start,end)));put(s,"workIntervals",spans);
+    }
+    static long[] overtimeBands(JSONObject s){
+        List<long[]> spans=new ArrayList<>();JSONArray recorded=s.optJSONArray("workIntervals");
+        if(s.optBoolean("manual")){spans.add(new long[]{s.optLong("startedAt"),s.optLong("endedAt")});}
+        else{if(recorded!=null)for(int n=0;n<recorded.length();n++){JSONArray r=recorded.optJSONArray(n);if(r!=null)spans.add(new long[]{r.optLong(0),r.optLong(1)});}
+         if("work".equals(s.optString("phase")))spans.add(new long[]{s.optLong("segmentStart"),System.currentTimeMillis()});}
+        ZoneId zone=ZoneId.of(s.optString("workZone",ZoneId.systemDefault().getId()));long lunch=0,end=0;
+        long lunchMs=Math.round(s.optDouble("lunchMinutes",0)*60000);if(lunchMs>0){try{LocalDate day=LocalDate.parse(date(s));lunch=day.atTime(LocalTime.parse(s.optString("lunchStart","12:00"))).atZone(zone).toInstant().toEpochMilli();if(!spans.isEmpty()&&lunch<spans.get(0)[0])lunch=day.plusDays(1).atTime(LocalTime.parse(s.optString("lunchStart","12:00"))).atZone(zone).toInstant().toEpochMilli();end=lunch+lunchMs;
+          long overlap=0;for(long[] r:spans)overlap+=Math.max(0,Math.min(r[1],end)-Math.max(r[0],lunch));if(overlap!=lunchMs)throw new IllegalArgumentException();
+         }catch(Exception e){throw new IllegalArgumentException("Confira o início do almoço: o intervalo deve estar dentro do tempo trabalhado.");}}
+        return OvertimeEngine.split(spans,zone,lunch,end);
+    }
     static JSONObject totals(JSONObject s, JSONObject cfg) {
         JSONObject c = s.optJSONObject("config");
         if (c == null) c = cfg;
         double[] a = CostEngine.calculate(elapsed(s), c.optDouble("hourly"), c.optDouble("tax"),
             s.optDouble("km", 0), c.optDouble("consumption"), c.optDouble("fuelPrice"),
             c.optDouble("tyres"), c.optDouble("maintenance"), c.optDouble("depreciation"), s.optDouble("extras", 0));
+        long[] bands=null;if(c.optBoolean("overtime")){
+            bands=overtimeBands(s);double gross=OvertimeEngine.gross(bands,c.optDouble("hourly"));a[0]=gross;a[1]=gross*c.optDouble("tax")/100;a[8]=gross-a[1]-a[7];
+        }
         String[] keys = {"gross", "tax", "fuel", "tyres", "maintenance", "depreciation", "extras", "carCosts", "net"};
         JSONObject j = new JSONObject();
         for (int i = 0; i < keys.length; i++) put(j, keys[i], a[i]);
         put(j, "workedMs", elapsed(s));
+        if(bands!=null){put(j,"regularMs",bands[0]);put(j,"overtime15Ms",bands[1]);put(j,"overtime2Ms",bands[2]);put(j,"overtimePremium",(bands[1]*0.5+bands[2])/3600000.0*c.optDouble("hourly"));}
         return j;
     }
 }

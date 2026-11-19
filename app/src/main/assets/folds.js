@@ -11,5 +11,5 @@
  }
  const balance=document.querySelector('#today .balance');enhance(balance,'balance',true,true);
  window.FoldUI={expand(panel){openers.get(panel)?.();},record(panel,id){enhance(panel,id,true,true);},enhance};
- for(const [id,panel]of [...document.querySelectorAll('#settings .panel,#today .panel.breakdown,#today .panel.route,#activeSkillsPanel,#invoices > .panel.settings-panel')].entries())enhance(panel,'static-'+id,false,false);
+ for(const [id,panel]of [...document.querySelectorAll('#settings .panel,#today .weekly-panel,#today .panel.breakdown,#today .panel.route,#activeSkillsPanel,#invoices > .panel.settings-panel')].entries())enhance(panel,'static-'+id,false,false);
 })();

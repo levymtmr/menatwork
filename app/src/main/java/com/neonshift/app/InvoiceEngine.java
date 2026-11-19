@@ -10,9 +10,12 @@ public final class InvoiceEngine {
     public static final class Item {
         public final LocalDate date;
         public final String address, sourceId;
-        public final BigDecimal actual, billed, amount;
+        public final BigDecimal actual, billed, amount, premium;
         public final boolean dayOff;
         public Item(String date, String address, String hours, String rate, String sourceId) {
+            this(date,address,hours,rate,sourceId,"0");
+        }
+        public Item(String date,String address,String hours,String rate,String sourceId,String extra) {
             try { this.date = LocalDate.parse(date); }
             catch (java.time.DateTimeException e) { throw new IllegalArgumentException("Confira a data de cada lançamento."); }
             this.address = address.trim().replaceAll("\\s+", " ");
@@ -22,7 +25,8 @@ public final class InvoiceEngine {
             this.actual = dayOff ? BigDecimal.ZERO : hours(hours);
             if (actual.signum() > 0 && this.address.isEmpty()) throw new IllegalArgumentException("Informe o local de cada trabalho.");
             this.billed = actual.multiply(new BigDecimal("4")).setScale(0, RoundingMode.CEILING).divide(new BigDecimal("4"));
-            this.amount = billed.multiply(rate(rate)).setScale(2, RoundingMode.HALF_UP);
+            try{premium=new BigDecimal(extra);if(premium.signum()<0||premium.compareTo(new BigDecimal("1000000"))>0)throw new NumberFormatException();}catch(Exception e){throw new IllegalArgumentException("Confira o adicional de overtime.");}
+            this.amount = billed.multiply(rate(rate)).add(premium).setScale(2, RoundingMode.HALF_UP);
         }
     }
     public static BigDecimal hours(String raw) {

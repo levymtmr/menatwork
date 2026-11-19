@@ -1,10 +1,10 @@
-# Menatwork 1.7.0
+# Menatwork 1.8.0
 
-Aplicativo Android pessoal, em português, para acompanhar o ganho líquido estimado de uma jornada de trabalho. Interface de terminal retrofuturista inspirada no Pip-Boy: fósforo verde, linhas sutis de CRT, painéis monocromáticos e trabalhador animado. Ilustrações originais desenhadas em canvas.
+Aplicativo Android pessoal, em inglês ou português, para acompanhar o ganho líquido estimado de uma jornada de trabalho. Interface de terminal retrofuturista inspirada no Pip-Boy: fósforo verde, linhas sutis de CRT, painéis monocromáticos e trabalhador animado. Ilustrações originais desenhadas em canvas.
 
 ## Instalar
 
-O instalador fica em `dist/neon-shift-1.7.0.apk`. Veja `INSTALAR.md`.
+O instalador fica em `dist/neon-shift-1.8.0.apk`. Veja `INSTALAR.md`.
 
 Compatível com Android 8.0 ou superior, incluindo o Galaxy S22 Ultra. O APK usa apenas Java e APIs do Android, sem bibliotecas nativas, conta no aplicativo ou servidor de registros. O GitHub hospeda as atualizações públicas. A interface é local em WebView; o GPS, a persistência e o acompanhamento em segundo plano são nativos.
 
@@ -202,3 +202,11 @@ Defina o valor por hora em Ajustes → Clientes → Editar. Ao selecionar o clie
 ### Cliente ao iniciar (1.7.2)
 
 Ao iniciar o trajeto ou o trabalho, escolha o cliente na lista com as tarifas. O serviço salva o cliente e uma cópia da tarifa na nova jornada. Settings → Work permite selecionar o cliente e atualizar sua tarifa. Alterações posteriores não recalculam a jornada ativa.
+
+### Overtime e semana (1.8.0)
+
+Ative Overtime em Ajustes → Clientes → Editar. O cliente usa 1× antes das 15h, 1,5× entre 15h e 17h e 2× após 17h no fuso salvo na jornada. Pausas e almoço não recebem adicional. Informe o início do almoço (12:00 vem preenchido e pode ser alterado). Para lançamento manual com overtime, use início/término e o intervalo de almoço; outras pausas devem ser registradas pelo cronômetro ou em jornadas separadas. A tarifa e a regra ficam congeladas na jornada.
+
+O invoice usa a tarifa do registro de overtime, mantém o arredondamento de horas a 15 minutos e acrescenta o prêmio de overtime calculado pelo tempo efetivo. Atualizar as jornadas vinculadas atualiza esse adicional. O PDF continua em inglês.
+
+O painel Esta semana considera todos os dias de segunda a domingo por data de trabalho, soma horas pagas, bruto e líquido, inclui a jornada atual e exclui registros removidos. Moedas ficam separadas. O almoço da jornada ativa é deduzido ao finalizar. Jornadas antigas preservam os valores registrados.

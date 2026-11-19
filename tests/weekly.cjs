@@ -1,0 +1,4 @@
+const assert=require('node:assert/strict'),{summary}=require('../app/src/main/assets/weekly.js');
+const row=(day,gross,deleted=false,currency='AUD')=>({workDate:day,config:{currency},workedMs:3600000,totals:{gross,net:gross-2},deleted});
+const week=summary([row('2026-11-16',32),row('2026-11-17',48),row('2026-11-15',100),row('2026-11-23',100),row('2026-11-18',999,true),row('2026-11-19',20,false,'USD')],{phase:'work',workDate:'2026-11-19',config:{currency:'AUD'}},{gross:64,net:60,workedMs:7200000},{},new Date(2026,10,19,18).getTime());
+assert.equal(week.from,'2026-11-16');assert.equal(week.to,'2026-11-23');assert.equal(week.groups.AUD.gross,144);assert.equal(week.groups.AUD.workedMs,14400000);assert.equal(week.groups.AUD.net,136);assert.equal(week.groups.USD.gross,20);assert.equal(Object.keys(week.groups.AUD.days).length,3);console.log('PASS: weekly sum includes all workdays and active shift, excludes deleted/outside week, separates currencies.');

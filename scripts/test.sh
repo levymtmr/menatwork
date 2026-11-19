@@ -23,3 +23,6 @@ PY
 "${NODE_BIN:-node}" tests/listing.cjs
 "$JAVA_HOME/bin/javac" -encoding UTF-8 -cp build/tests -d build/tests app/src/main/java/com/neonshift/app/WorksiteBook.java tests/WorksiteBookTest.java
 "$JAVA_HOME/bin/java" -cp build/tests WorksiteBookTest
+"$JAVA_HOME/bin/javac" -encoding UTF-8 -d build/tests app/src/main/java/com/neonshift/app/OvertimeEngine.java tests/OvertimeTest.java
+"$JAVA_HOME/bin/java" -cp build/tests OvertimeTest
+"${NODE_BIN:-node}" tests/weekly.cjs

@@ -91,7 +91,7 @@ final class InvoiceStore {
             if (!dayOff && InvoiceEngine.hours(hours).signum() == 0) continue;
             String source = r.optString("sourceId", "");
             if (!source.isEmpty() && !linked.add(source)) throw new IllegalArgumentException("Uma jornada foi incluída duas vezes.");
-            items.add(new InvoiceEngine.Item(r.getString("date"), address, hours, rate, source));
+            items.add(new InvoiceEngine.Item(r.getString("date"), address, hours, r.optString("sourceRate",rate), source,r.optString("overtimePremium","0")));
         }
         InvoiceEngine.total(items);
         return items;
@@ -175,6 +175,8 @@ final class InvoiceStore {
             JSONObject row=rows.getJSONObject(n);String id=row.optString("sourceId");if(id.isEmpty())continue;
             JSONObject source=journals.findJournal(id);
             if(source==null||source.optBoolean("deleted"))throw new IllegalArgumentException("Uma jornada foi removida. Toque em Atualizar jornadas vinculadas.");
+            JSONObject totals=source.optJSONObject("totals");double premium=totals==null?0:totals.optDouble("overtimePremium",0);
+            if(source.optJSONObject("config").optBoolean("overtime")&&(Math.abs(row.optDouble("overtimePremium",0)-premium)>0.00001||Math.abs(row.optDouble("sourceRate",0)-source.getJSONObject("config").getDouble("hourly"))>0.00001||Math.abs(InvoiceEngine.hours(row.optString("hours")).doubleValue()-source.optLong("workedMs")/3600000.0)>0.000001))throw new IllegalArgumentException("Atualize a jornada vinculada para incluir o overtime correto.");
             if(row.has("sourceFingerprint")&&!row.getString("sourceFingerprint").equals(Store.fingerprint(source)))
                 throw new IllegalArgumentException("Uma jornada foi editada. Atualize os vínculos do rascunho antes de emitir.");
         }
@@ -201,6 +203,7 @@ final class InvoiceStore {
             JSONObject row=new JSONObject(rows.getJSONObject(n).toString());String id=row.optString("sourceId");
             if(!id.isEmpty()){
                 JSONObject source=journals.findJournal(id);if(source==null||source.optBoolean("deleted"))continue;
+                row.put("overtimePremium",source.optJSONObject("totals").optDouble("overtimePremium",0));if(source.optJSONObject("config").optBoolean("overtime"))row.put("sourceRate",source.getJSONObject("config").getDouble("hourly"));else row.remove("sourceRate");
                 row.put("date",Store.date(source));row.put("hours",java.math.BigDecimal.valueOf(source.optLong("workedMs")).divide(new java.math.BigDecimal("3600000"),12,java.math.RoundingMode.HALF_UP).stripTrailingZeros().toPlainString());
                 if(!source.optString("worksite").trim().isEmpty())row.put("address",source.optString("worksite"));
                 row.put("sourceFingerprint",Store.fingerprint(source));row.put("workType",source.optString("workType"));

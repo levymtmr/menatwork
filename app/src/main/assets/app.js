@@ -84,6 +84,9 @@
     const dateKey=ts=>{const d=new Date(ts);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
     for(const record of state.history){if(!record.deleted&&(record.workDate||dateKey(record.startedAt))===dateKey(state.now))daily[record.config.currency]=(daily[record.config.currency]||0)+record.totals.net;}
     if(phase!=='idle'&&(s.workDate||dateKey(s.startedAt))===dateKey(state.now))daily[cfg.currency]=(daily[cfg.currency]||0)+t.net;
+    const week=window.Weekly.summary(state.history,s,t,state.config,state.now),weekly=$('weeklyTotals');weekly.replaceChildren(safeText('p',week.from+' · '+window.I18n.t('Segunda a domingo'),'help'));
+    if(!Object.keys(week.groups).length)weekly.append(safeText('p',window.I18n.t('Nenhum trabalho nesta semana.')));
+    for(const [currency,g] of Object.entries(week.groups)){weekly.append(safeText('strong',currency+' · '+(g.workedMs/3600000).toLocaleString(window.I18n.locale(),{maximumFractionDigits:2})+' h'),safeText('p',window.I18n.t('Bruto')+': '+money(g.gross)+' · '+window.I18n.t('Líquido')+': '+money(g.net)));for(const [day,ms]of Object.entries(g.days).sort())weekly.append(safeText('small',day+' · '+(ms/3600000).toLocaleString(window.I18n.locale(),{maximumFractionDigits:2})+' h','weekly-day'));}
     const summary=$('dailySummary');summary.classList.toggle('hidden',!Object.keys(daily).length);
     summary.replaceChildren(safeText('span','ACUMULADO HOJE','tiny'),...Object.entries(daily).map(([currency,value])=>safeText('strong',currency+' '+money(value))),safeText('small','Por dia de trabalho · inclui jornada atual'));
     $('recovery').classList.toggle('hidden',phase==='idle'||state.serviceRunning);

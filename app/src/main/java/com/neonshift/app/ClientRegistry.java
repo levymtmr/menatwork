@@ -22,6 +22,7 @@ final class ClientRegistry {
   for(String field:new String[]{"client_address","client_email","client_abn"})Store.put(client,field,source.optString(field));map.put(key,client);
  }
  Double hourly(String name){JSONArray all=list();for(int n=0;n<all.length();n++){JSONObject item=all.optJSONObject(n);if(item!=null&&key(item.optString("client")).equals(key(name))&&item.has("hourly"))return item.optDouble("hourly");}return null;}
+ boolean overtime(String name){JSONArray all=list();for(int n=0;n<all.length();n++){JSONObject c=all.optJSONObject(n);if(c!=null&&key(c.optString("client")).equals(key(name)))return c.optBoolean("overtime");}return false;}
  JSONArray list(){try{return new JSONArray(prefs.getString("clients","[]"));}catch(Exception e){throw new IllegalStateException("Não foi possível carregar o cadastro de clientes.");}}
  void remember(JSONObject profile) throws Exception {
   String name=profile.optString("client").trim();if(name.isEmpty()||name.length()>120||Arrays.asList("client name","nome do cliente / client name").contains(key(name)))return;
@@ -39,6 +40,7 @@ final class ClientRegistry {
   JSONArray all=list();JSONObject saved=null;
   for(int n=0;n<all.length();n++){JSONObject item=all.getJSONObject(n);if(item.optString("id").equals(id))saved=item;else if(key(item.getString("client")).equals(key(name)))throw new IllegalArgumentException("Já existe um cliente com esse nome. Escolha o cliente cadastrado ou edite os dados dele.");}
   if(saved==null){if(!id.isEmpty())throw new IllegalArgumentException("Cliente não encontrado.");saved=new JSONObject();saved.put("id",UUID.randomUUID().toString());all.put(saved);}
+  if(input.has("overtime"))saved.put("overtime",input.getBoolean("overtime"));
   if(hourly!=null)saved.put("hourly",hourly);
   saved.put("client",name);saved.put("client_address",address);saved.put("client_email",email);saved.put("client_abn",abn);
   if(!prefs.edit().putString("clients",all.toString()).commit())throw new IllegalStateException("Não foi possível salvar o cliente.");return new JSONObject(saved.toString());

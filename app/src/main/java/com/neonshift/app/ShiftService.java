@@ -75,6 +75,7 @@ public class ShiftService extends Service implements LocationListener {
             Store.put(s, "workedMs", 0);
             Store.put(s, "config", store.config());
             Store.put(s,"client",store.config().optString("client"));Store.put(s,"clientId",store.config().optString("clientId"));
+            Store.put(s,"workZone",java.time.ZoneId.systemDefault().getId());
             Store.put(s, "skillIds", new org.json.JSONArray());
             Store.put(s, "phase", "commute".equals(action) ? "commute" : "work");
             if ("work".equals(action)) { Store.startSegment(s); Store.put(s,"workStartedAt",now);Store.put(s,"workDate",java.time.LocalDate.now().toString()); }
@@ -83,15 +84,18 @@ public class ShiftService extends Service implements LocationListener {
             Store.startSegment(s);
             Store.put(s,"workStartedAt",now);Store.put(s,"workDate",java.time.LocalDate.now().toString());
         } else if ("pause".equals(action) && "work".equals(phase)) {
+            Store.closeInterval(s,now);
             Store.put(s, "workedMs", Store.elapsed(s));
             Store.put(s, "phase", "pause");
         } else if ("resume".equals(action) && "pause".equals(phase)) {
             Store.put(s, "phase", "work");
             Store.startSegment(s);
         } else if ("return".equals(action) && ("work".equals(phase) || "pause".equals(phase))) {
+            Store.closeInterval(s,now);
             Store.put(s, "workedMs", Store.elapsed(s));
             Store.put(s, "phase", "return");
         } else if ("finish".equals(action) && !"idle".equals(phase)) {
+            Store.closeInterval(s,now);
             Store.put(s, "workedMs", Store.elapsed(s));
             Store.put(s, "phase", "done");
             Store.put(s, "endedAt", now);

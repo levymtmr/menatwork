@@ -504,5 +504,19 @@
   "Cliente do trabalho": "Work client",
   "Para qual cliente você vai trabalhar?": "Which client will you work for?",
   "Cadastre um cliente para iniciar o trabalho.": "Add a client to start work.",
-  "Iniciar": "Start"
+  "Iniciar": "Start",
+  "ESTA SEMANA": "THIS WEEK",
+  "Segunda a domingo": "Monday to Sunday",
+  "Nenhum trabalho nesta semana.": "No work this week.",
+  "Líquido": "Net",
+  "Início do almoço": "Lunch start",
+  "Início do almoço (HH:mm)": "Lunch start (HH:mm)",
+  "Overtime: 15h–17h ×1,5; após 17h ×2": "Overtime: 3–5 pm ×1.5; after 5 pm ×2",
+  "Confira os horários do overtime.": "Check the overtime times.",
+  "Para overtime, informe início e término e use o campo de almoço para o intervalo não pago.": "For overtime, enter start and end times and use the lunch field for the unpaid break.",
+  "Confira o início do almoço: o intervalo deve estar dentro do tempo trabalhado.": "Check the lunch start: the break must fall within working time.",
+  "Confira o adicional de overtime.": "Check the overtime premium.",
+  "Atualize a jornada vinculada para incluir o overtime correto.": "Refresh the linked shift to include the correct overtime.",
+  "Para overtime, ajuste os horários no histórico ou em Corrigir e encerrar.": "For overtime, edit the times in history or Correct and finish.",
+  "Inclui jornada atual; almoço descontado ao finalizar.": "Includes current shift; lunch is deducted when finishing."
 }

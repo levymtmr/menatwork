@@ -18,10 +18,10 @@
   function hours(value){const s=String(value).trim();if(/^\d{1,2}:[0-5]\d$/.test(s)){const [h,m]=s.split(':').map(Number);if(h*60+m>1440)throw Error('Cada lançamento aceita até 24 horas.');return{n:BigInt(h*60+m),d:60n};}const r=decimal(s||'0');if(r.n>24n*r.d)throw Error('Cada lançamento aceita até 24 horas.');return r;}
   function line(row,rate){
     const dayOff=row.address.trim().toLowerCase()==='day off',h=dayOff?{n:0n,d:1n}:hours(row.hours);
-    const r=decimal(rate);if(r.n<=0n||r.n>10000n*r.d)throw Error('Confira a tarifa do invoice.');
+    const r=decimal(row.sourceRate||rate);if(r.n<=0n||r.n>10000n*r.d)throw Error('Confira a tarifa do invoice.');
     const quarters=(h.n*4n+h.d-1n)/h.d;
     const denominator=4n*r.d,numerator=quarters*r.n*100n;
-    const cents=(numerator*2n+denominator)/(denominator*2n);
+    const premium=decimal(row.overtimePremium||0),combined=numerator*premium.d+premium.n*100n*denominator,divisor=denominator*premium.d;const cents=(combined*2n+divisor)/(divisor*2n);
     return {actual:Number(h.n)/Number(h.d),quarters:Number(quarters),cents:Number(cents),dayOff};
   }
   const cash=cents=>'$ '+(cents/100).toLocaleString(window.I18n.locale(),{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -33,7 +33,7 @@
   for(const [key,label]of Object.entries(fields))input(label,key,'',$((key.startsWith('client')||key==='description')?'clientFields':'sellerFields'),key.includes('address')||key==='description'?'textarea':key.includes('email')?'email':'text');
   function readDraft(){
     const profile={};for(const key of Object.keys(fields))profile[key]=document.querySelector(`[name="${key}"]`).value.trim();
-    const rows=[...document.querySelectorAll('.invoice-entry')].map(el=>({date:el.querySelector('[name="date"]').value,address:el.querySelector('[name="workAddress"]').value.trim(),hours:el.querySelector('[name="hours"]').value.trim()||'0',sourceId:el.dataset.sourceId||'',sourceFingerprint:el.dataset.sourceFingerprint||'',workType:el.dataset.workType||''}));
+    const rows=[...document.querySelectorAll('.invoice-entry')].map(el=>({date:el.querySelector('[name="date"]').value,address:el.querySelector('[name="workAddress"]').value.trim(),hours:el.querySelector('[name="hours"]').value.trim()||'0',sourceId:el.dataset.sourceId||'',sourceFingerprint:el.dataset.sourceFingerprint||'',workType:el.dataset.workType||'',overtimePremium:el.dataset.overtimePremium||'0',...(el.dataset.sourceRate?{sourceRate:el.dataset.sourceRate}:{})}));
     return {number:Number($('invoiceNumber').value),rate:$('invoiceRate').value.trim().replace(',','.'),profile,rows};
   }
   function updateTotals(){
@@ -44,10 +44,10 @@
   function save(){clearTimeout(saveTimer);if(native&&initialized)cmd('saveInvoiceDraft',readDraft());}
   function changed(){editing=true;updateTotals();clearTimeout(saveTimer);saveTimer=setTimeout(save,500);}
   function addRow(row={date:today(),address:'',hours:'0',sourceId:''},persist=true){
-    const box=text('div','','invoice-entry');box.dataset.sourceId=row.sourceId||'';box.dataset.sourceFingerprint=row.sourceFingerprint||'';box.dataset.workType=row.workType||'';
+    const box=text('div','','invoice-entry');box.dataset.sourceId=row.sourceId||'';box.dataset.sourceFingerprint=row.sourceFingerprint||'';box.dataset.workType=row.workType||'';box.dataset.overtimePremium=Number(row.overtimePremium||0).toFixed(10);box.dataset.sourceRate=row.sourceRate||'';
     const top=text('div','','entry-top');top.append(text('span',row.sourceId?'JORNADA DO HISTÓRICO':'LANÇAMENTO MANUAL'));
     const remove=text('button','×','remove-entry');remove.type='button';remove.setAttribute('aria-label','Remover lançamento');remove.onclick=()=>{box.remove();changed();};top.append(remove);box.append(top);
-    const grid=text('div','','invoice-grid');input('Data','date',row.date,grid,'date');const h=input('Horas reais','hours',row.hours,grid);h.inputMode='decimal';h.maxLength=32;box.append(grid);
+    const grid=text('div','','invoice-grid');input('Data','date',row.date,grid,'date');const h=input('Horas reais','hours',row.hours,grid);h.readOnly=!!row.sourceRate;h.inputMode='decimal';h.maxLength=32;box.append(grid);
     const addr=input('Local do trabalho','workAddress',row.address,box);addr.maxLength=1000;window.WorksitesUI.bind(addr);
     box.append(text('p','','line-total'));$('invoiceRows').append(box);if(persist)changed();
   }
@@ -99,7 +99,7 @@
       const already=(state.invoices||[]).find(r=>r.status!=='cancelled'&&(r.sourceIds||[]).includes(id));
       if(already||d.rows.some(r=>r.sourceId===id)){error('Essa jornada já foi adicionada a um invoice.');return false;}
       const date=s.workDate||new Intl.DateTimeFormat('en-CA',{timeZone:'Australia/Adelaide',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(s.startedAt));
-      error('');addRow({date,address:s.worksite||'',hours:(s.workedMs/3600000).toFixed(10).replace(/0+$/,'').replace(/\.$/,''),sourceId:id,sourceFingerprint:s.billingFingerprint||'',workType:s.workType||''});window.FoldUI.expand(document.querySelector('#invoices > .panel.settings-panel'));return true;
+      error('');addRow({date,address:s.worksite||'',hours:(s.workedMs/3600000).toFixed(10).replace(/0+$/,'').replace(/\.$/,''),sourceId:id,sourceFingerprint:s.billingFingerprint||'',workType:s.workType||'',overtimePremium:s.totals?.overtimePremium||0,...(s.config?.overtime?{sourceRate:s.config.hourly}:{})});window.FoldUI.expand(document.querySelector('#invoices > .panel.settings-panel'));return true;
     }
   };
   window.invoiceIssued=()=>{window.FoldUI.expand(document.querySelector('#invoices > .panel.settings-panel'));clearTimeout(saveTimer);initialized=false;editing=false;recordsSignature='';error('');};
