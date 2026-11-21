@@ -13,7 +13,11 @@ final class ClientRegistry {
    addLegacy(found,shifts.session());JSONArray history=shifts.history();for(int n=0;n<history.length();n++)addLegacy(found,history.optJSONObject(n));
    if(!prefs.edit().putString("clients",new JSONArray(found.values()).toString()).putBoolean("importedV1",true).commit())throw new IllegalStateException("Não foi possível carregar o cadastro de clientes.");
   }
+  if(!prefs.getBoolean("markenRuleV1",false)){JSONArray all=list();for(int n=0;n<all.length();n++){JSONObject c=all.optJSONObject(n);if(c!=null&&namedMarken(c.optString("client"))){Store.put(c,"payRule","marken");Store.put(c,"overtime",true);}}if(!prefs.edit().putString("clients",all.toString()).putBoolean("markenRuleV1",true).commit())throw new IllegalStateException("Não foi possível salvar o cliente.");}
  }
+ static boolean namedMarken(String name){return key(name).matches(".*\\bmarken\\b.*");}
+ static String rule(JSONObject c){return c.optString("payRule",c.optBoolean("overtime")?"clock":"none");}
+ String rule(String name){JSONArray all=list();for(int n=0;n<all.length();n++){JSONObject c=all.optJSONObject(n);if(c!=null&&key(c.optString("client")).equals(key(name)))return rule(c);}return "none";}
  static String key(String name){return name.trim().replaceAll("\\s+"," ").toLowerCase(Locale.ROOT);}
  private static void addLegacy(Map<String,JSONObject> map,JSONObject source){
   if(source==null)return;String name=source.optString("client").trim(),key=key(name);
@@ -40,7 +44,9 @@ final class ClientRegistry {
   JSONArray all=list();JSONObject saved=null;
   for(int n=0;n<all.length();n++){JSONObject item=all.getJSONObject(n);if(item.optString("id").equals(id))saved=item;else if(key(item.getString("client")).equals(key(name)))throw new IllegalArgumentException("Já existe um cliente com esse nome. Escolha o cliente cadastrado ou edite os dados dele.");}
   if(saved==null){if(!id.isEmpty())throw new IllegalArgumentException("Cliente não encontrado.");saved=new JSONObject();saved.put("id",UUID.randomUUID().toString());all.put(saved);}
+  String payRule=input.has("payRule")?input.getString("payRule"):saved.has("payRule")?saved.getString("payRule"):namedMarken(name)?"marken":input.optBoolean("overtime")?"clock":"none";if(!Arrays.asList("none","clock","marken").contains(payRule))throw new IllegalArgumentException("Regra de pagamento inválida.");saved.put("payRule",payRule);
   if(input.has("overtime"))saved.put("overtime",input.getBoolean("overtime"));
+  saved.put("overtime",!"none".equals(payRule));
   if(hourly!=null)saved.put("hourly",hourly);
   saved.put("client",name);saved.put("client_address",address);saved.put("client_email",email);saved.put("client_abn",abn);
   if(!prefs.edit().putString("clients",all.toString()).commit())throw new IllegalStateException("Não foi possível salvar o cliente.");return new JSONObject(saved.toString());

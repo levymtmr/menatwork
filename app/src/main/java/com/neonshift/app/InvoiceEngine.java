@@ -9,22 +9,25 @@ import java.util.*;
 public final class InvoiceEngine {
     public static final class Item {
         public final LocalDate date;
-        public final String address, sourceId;
+        public final String address, sourceId, note;
         public final BigDecimal actual, billed, amount, premium;
         public final boolean dayOff;
         public Item(String date, String address, String hours, String rate, String sourceId) {
             this(date,address,hours,rate,sourceId,"0");
         }
         public Item(String date,String address,String hours,String rate,String sourceId,String extra) {
+            this(date,address,hours,rate,sourceId,extra,false,"");
+        }
+        public Item(String date,String address,String hours,String rate,String sourceId,String extra,boolean exact,String note) {
             try { this.date = LocalDate.parse(date); }
             catch (java.time.DateTimeException e) { throw new IllegalArgumentException("Confira a data de cada lançamento."); }
             this.address = address.trim().replaceAll("\\s+", " ");
             if (this.address.length() > 1000) throw new IllegalArgumentException("Local de trabalho muito longo.");
-            this.sourceId = sourceId;
+            this.sourceId = sourceId;this.note=note;
             this.dayOff = this.address.equalsIgnoreCase("Day off");
             this.actual = dayOff ? BigDecimal.ZERO : hours(hours);
             if (actual.signum() > 0 && this.address.isEmpty()) throw new IllegalArgumentException("Informe o local de cada trabalho.");
-            this.billed = actual.multiply(new BigDecimal("4")).setScale(0, RoundingMode.CEILING).divide(new BigDecimal("4"));
+            this.billed = exact?actual:actual.multiply(new BigDecimal("4")).setScale(0, RoundingMode.CEILING).divide(new BigDecimal("4"));
             try{premium=new BigDecimal(extra);if(premium.signum()<0||premium.compareTo(new BigDecimal("1000000"))>0)throw new NumberFormatException();}catch(Exception e){throw new IllegalArgumentException("Confira o adicional de overtime.");}
             this.amount = billed.multiply(rate(rate)).add(premium).setScale(2, RoundingMode.HALF_UP);
         }

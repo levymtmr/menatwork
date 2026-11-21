@@ -41,13 +41,13 @@ final class Store {
         if (!j.has("currency")) put(j, "currency", "AUD");
         return j;
     }
-    JSONObject session() { return obj(prefs.getString("session", "{}")); }
+    JSONObject session() { JSONObject s=obj(prefs.getString("session", "{}"));prepareMarken(s);return s; }
     JSONArray history() {
         try { return new JSONArray(prefs.getString("history", "[]")); }
         catch (Exception e) { return new JSONArray(); }
     }
     void saveConfig(JSONObject j) { prefs.edit().putString("config", j.toString()).commit(); }
-    void save(JSONObject j) { withWorksite(prefs.edit(),j.optString("worksite")).putString("session", j.toString()).commit(); }
+    void save(JSONObject j) { prepareMarken(j);withWorksite(prefs.edit(),j.optString("worksite")).putString("session", j.toString()).commit(); }
     private List<String> savedWorksites() {
         List<String> out=new ArrayList<>();try{JSONArray a=new JSONArray(prefs.getString("worksites","[]"));for(int n=0;n<a.length();n++)out.add(a.optString(n));}catch(Exception ignored){}return out;
     }
@@ -68,6 +68,7 @@ final class Store {
         out.put(session);
         for (int i = 0; i < h.length(); i++) out.put(h.opt(i));
         // Session archive and active-session reset are one durable transaction.
+        repriceMarken(out);
         withWorksite(prefs.edit(),session.optString("worksite")).putString("history", out.toString()).putString("session", "{}").commit();
     }
     static String id(JSONObject record) { return record.optString("id",String.valueOf(record.optLong("startedAt"))); }
@@ -76,7 +77,7 @@ final class Store {
             .atZone(ZoneId.systemDefault()).toLocalDate().toString());
     }
     static String fingerprint(JSONObject record) {
-        JSONObject cfg=record.optJSONObject("config"),totals=record.optJSONObject("totals");String extra=cfg!=null&&cfg.optBoolean("overtime")?"|ot:"+cfg.optDouble("hourly")+":"+(totals==null?0:totals.optDouble("overtimePremium",0)):"";
+        JSONObject cfg=record.optJSONObject("config"),totals=record.optJSONObject("totals");String extra=cfg!=null&&cfg.optBoolean("overtime")?"|ot:"+cfg.optDouble("hourly")+":"+(totals==null?0:totals.optDouble("overtimePremium",0))+(isMarken(record)?":marken":""):"";
         return date(record)+"|"+record.optLong("workedMs")+"|"+record.optString("worksite","").trim()+extra;
     }
     JSONObject findJournal(String id) {
@@ -90,6 +91,7 @@ final class Store {
         return out;
     }
     private void writeHistory(JSONArray rows) {
+        repriceMarken(rows);
         if(!prefs.edit().putString("history",rows.toString()).commit())throw new IllegalStateException("Não foi possível salvar as jornadas.");
     }
     void removeJournal(String key, boolean deleted) {
@@ -105,6 +107,7 @@ final class Store {
         put(s,"totals",totals(s,config()));s.remove("lastLat");s.remove("lastLon");s.remove("lastFix");finish(s);
     }
     static void validateConfig(JSONObject p) throws Exception {
+        String rule=p.optString("payRule",p.optBoolean("overtime")?"clock":"none");if(!Arrays.asList("none","clock","marken").contains(rule))throw new IllegalArgumentException("Regra de pagamento inválida.");if(p.has("payRule"))put(p,"overtime",!"none".equals(rule));
         String[] keys={"hourly","tax","consumption","fuelPrice","tyres","maintenance","depreciation"};
         double[] max={10000,100,100,1000,1000,1000,1000};
         for(int n=0;n<keys.length;n++)if(!CostEngine.valid(p.getDouble(keys[n]),max[n]))throw new IllegalArgumentException("Confira os valores da jornada: "+keys[n]);
@@ -161,8 +164,8 @@ final class Store {
         if(client.length()>160||workType.length()>100)throw new IllegalArgumentException("Confira o cliente e o tipo de trabalho.");
         if(worksite.length()>1000||notes.length()>1000)throw new IllegalArgumentException("Local e observações aceitam até 1.000 caracteres.");
         put(record,"id",key);put(record,"workDate",day);put(record,"entryMode",mode);
-        String lunch=p.optString("lunchMinutes","0");long paid=LunchEngine.paid(e.workedMs,lunch);
-        put(record,"startedAt",e.startedAt);put(record,"endedAt",e.endedAt);put(record,"trackedWorkedMs",e.workedMs);put(record,"lunchMinutes",new java.math.BigDecimal(lunch.trim().replace(',','.')).stripTrailingZeros().toPlainString());put(record,"workedMs",paid);
+        String lunch="marken".equals(cfg.optString("payRule"))?(MarkenEngine.meal(e.workedMs)>0?"30":"0"):p.optString("lunchMinutes","0");long paid=LunchEngine.paid(e.workedMs,lunch);
+        put(record,"workStartedAt",e.startedAt);if(cfg.has("clientId"))put(record,"clientId",cfg.optString("clientId"));else record.remove("clientId");put(record,"startedAt",e.startedAt);put(record,"endedAt",e.endedAt);put(record,"trackedWorkedMs",e.workedMs);put(record,"lunchMinutes",new java.math.BigDecimal(lunch.trim().replace(',','.')).stripTrailingZeros().toPlainString());put(record,"workedMs",paid);
         put(record,"lunchStart",p.optString("lunchStart","12:00"));put(record,"workZone",ZoneId.systemDefault().getId());record.remove("workIntervals");
         put(record,"client",client);put(record,"workType",workType);
         put(record,"startTime",p.optString("startTime"));put(record,"endTime",p.optString("endTime"));put(record,"nextDay",p.optBoolean("nextDay"));put(record,"breakMinutes",p.optString("breakMinutes","0"));
@@ -172,6 +175,7 @@ final class Store {
         record.remove("lastLat");record.remove("lastLon");record.remove("lastFix");record.remove("segmentStart");record.remove("segmentUptime");
         JSONArray out=new JSONArray();out.put(record);
         for(int n=0;n<all.length();n++){JSONObject old=all.getJSONObject(n);if(!id(old).equals(key))out.put(old);}
+        repriceMarken(out);
         SharedPreferences.Editor edit=withWorksite(prefs.edit(),worksite).putString("history",out.toString());if(active)edit.putString("session","{}");
         if(!edit.commit())throw new IllegalStateException("Não foi possível salvar o dia de trabalho.");
         return record;
@@ -181,6 +185,7 @@ final class Store {
         JSONObject s=session();
         if(!s.has("phase")||!id(s).equals(key)||!s.optString("phase").equals(phase))throw new IllegalArgumentException("A jornada em andamento mudou. Abra a correção novamente.");
         if(trackedMs<0||trackedMs>elapsed(s)||endedAt>System.currentTimeMillis())throw new IllegalArgumentException("Confira o tempo registrado.");
+        if(isMarken(s))minutes=MarkenEngine.meal(trackedMs)>0?"30":"0";
         long paid=LunchEngine.paid(trackedMs,minutes);
         if("work".equals(phase))closeInterval(s,endedAt);put(s,"lunchStart",lunchStart);
         put(s,"trackedWorkedMs",trackedMs);put(s,"lunchMinutes",new java.math.BigDecimal(minutes.trim().replace(',','.')).stripTrailingZeros().toPlainString());
@@ -194,7 +199,7 @@ final class Store {
             long ms=Math.max(0,r.optLong("workedMs"));confirmed+=ms;Set<String> seen=new HashSet<>();JSONArray ids=r.optJSONArray("skillIds");
             if(ids!=null)for(int i=0;i<ids.length();i++){String id=ids.optString(i);if(seen.add(id))perSkill.put(id,perSkill.getOrDefault(id,0L)+ms);}
         }
-        JSONObject current=session();long provisional=elapsed(current);Set<String> selected=new HashSet<>();JSONArray ids=current.optJSONArray("skillIds");
+        JSONObject current=session();long provisional=isMarken(current)?MarkenEngine.paid(elapsed(current)):elapsed(current);Set<String> selected=new HashSet<>();JSONArray ids=current.optJSONArray("skillIds");
         if(ids!=null)for(int i=0;i<ids.length();i++)selected.add(ids.optString(i));
         JSONObject out=new JSONObject();put(out,"xp",Progression.xp(confirmed));put(out,"workedMs",confirmed);put(out,"level",Progression.level(Progression.xp(confirmed)));put(out,"within",Progression.withinLevel(Progression.xp(confirmed)));put(out,"pendingXp",Progression.xp(provisional));
         JSONArray stats=new JSONArray();
@@ -216,6 +221,15 @@ final class Store {
         put(s, "segmentStart", System.currentTimeMillis());
         put(s, "segmentUptime", android.os.SystemClock.elapsedRealtime());
         put(s, "segmentBoot", currentBoot);
+    }
+    static boolean isMarken(JSONObject s){JSONObject cfg=s.optJSONObject("config");return cfg!=null&&"marken".equals(cfg.optString("payRule"));}
+    private static String markenKey(JSONObject s){JSONObject c=s.optJSONObject("config");String client=s.optString("clientId",c==null?"":c.optString("clientId"));if(client.isEmpty())client=ClientRegistry.key(s.optString("client"));return date(s)+"|"+client;}
+    private static long markenRaw(JSONObject s){return "done".equals(s.optString("phase"))?s.optLong("trackedWorkedMs",s.optLong("workedMs")):elapsed(s);}
+    private void prepareMarken(JSONObject s){if(!isMarken(s)||!s.has("phase"))return;long prior=0;String group=markenKey(s);JSONArray all=history();for(int n=0;n<all.length();n++){JSONObject r=all.optJSONObject(n);if(r!=null&&isMarken(r)&&!r.optBoolean("deleted")&&group.equals(markenKey(r))&&!id(s).equals(id(r)))prior+=markenRaw(r);}put(s,"markenOffsetMs",prior);}
+    private void repriceMarken(JSONArray rows){
+        List<JSONObject> ordered=new ArrayList<>();for(int n=0;n<rows.length();n++){JSONObject r=rows.optJSONObject(n);if(r!=null&&isMarken(r)&&!r.optBoolean("deleted"))ordered.add(r);}
+        ordered.sort(Comparator.comparingLong((JSONObject r)->r.optLong("workStartedAt",r.optLong("startedAt"))).thenComparing(Store::id));Map<String,Long> offsets=new HashMap<>();
+        for(JSONObject r:ordered){String key=markenKey(r);long raw=markenRaw(r),offset=offsets.getOrDefault(key,0L);put(r,"markenOffsetMs",offset);put(r,"lunchMinutes",MarkenEngine.meal(raw)>0?"30":"0");put(r,"workedMs",MarkenEngine.paid(raw));JSONObject totals=totals(r,r.optJSONObject("config"));put(r,"totals",totals);put(r,"billingNote",String.format(java.util.Locale.US,"Marken: ordinary %.4f h; OT1.5 %.4f h; OT2 %.4f h; unpaid meal %d min",totals.optLong("regularMs")/3600000.0,totals.optLong("overtime15Ms")/3600000.0,totals.optLong("overtime2Ms")/3600000.0,MarkenEngine.meal(raw)/60000));offsets.put(key,offset+raw);}
     }
     static void closeInterval(JSONObject s,long end){
         if(!"work".equals(s.optString("phase")))return;JSONArray spans=s.optJSONArray("workIntervals");if(spans==null)spans=new JSONArray();
@@ -239,12 +253,13 @@ final class Store {
             s.optDouble("km", 0), c.optDouble("consumption"), c.optDouble("fuelPrice"),
             c.optDouble("tyres"), c.optDouble("maintenance"), c.optDouble("depreciation"), s.optDouble("extras", 0));
         long[] bands=null;if(c.optBoolean("overtime")){
-            bands=overtimeBands(s);double gross=OvertimeEngine.gross(bands,c.optDouble("hourly"));a[0]=gross;a[1]=gross*c.optDouble("tax")/100;a[8]=gross-a[1]-a[7];
+            bands=isMarken(s)?MarkenEngine.bands(LocalDate.parse(date(s)),markenRaw(s),s.optLong("markenOffsetMs")):overtimeBands(s);double gross=OvertimeEngine.gross(bands,c.optDouble("hourly"));a[0]=gross;a[1]=gross*c.optDouble("tax")/100;a[8]=gross-a[1]-a[7];
         }
         String[] keys = {"gross", "tax", "fuel", "tyres", "maintenance", "depreciation", "extras", "carCosts", "net"};
         JSONObject j = new JSONObject();
         for (int i = 0; i < keys.length; i++) put(j, keys[i], a[i]);
         put(j, "workedMs", elapsed(s));
+        if(isMarken(s)){put(j,"workedMs",MarkenEngine.paid(markenRaw(s)));put(j,"automaticMealMinutes",MarkenEngine.meal(markenRaw(s))/60000);}
         if(bands!=null){put(j,"regularMs",bands[0]);put(j,"overtime15Ms",bands[1]);put(j,"overtime2Ms",bands[2]);put(j,"overtimePremium",(bands[1]*0.5+bands[2])/3600000.0*c.optDouble("hourly"));}
         return j;
     }

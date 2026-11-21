@@ -14,6 +14,8 @@ public class InvoiceTest {
     public static void main(String[] args) throws Exception {
         eq(new InvoiceEngine.Item("2026-11-16","OT site","9.25","32","source","64").amount.toPlainString(),"360.00");
         bad(()->new InvoiceEngine.Item("2026-11-16","OT site","9.25","32","source","-1"));
+        eq(new InvoiceEngine.Item("2026-11-16","Marken site","7.516666666667","32","marken","0",true,"Marken hours").amount.toPlainString(),"240.53");
+        eq(new InvoiceEngine.Item("2026-11-16","Marken site","9.5","32","marken","32",true,"").amount.toPlainString(),"336.00");
         eq(item("08:01", "32").billed.toPlainString(), "8.25");
         eq(item("08:01", "32").amount.toPlainString(), "264.00");
         eq(item("08:15", "32").amount.toPlainString(), "264.00");
@@ -51,6 +53,7 @@ public class InvoiceTest {
         boolean headerRejected=false;try{InvoicePdf.generate(18,LocalDate.of(2026,11,16),excessive,items);}catch(IllegalArgumentException e){headerRejected=true;}
         eq(headerRejected,true); // An oversized header must never produce a clipped PDF.
         Files.write(Paths.get("build/qa/invoice-overtime.pdf"),InvoicePdf.generate(20,LocalDate.of(2026,11,16),profile,Arrays.asList(new InvoiceEngine.Item("2026-11-16","Example site","9.25","32","source","64"))));
+        Files.write(Paths.get("build/qa/invoice-marken.pdf"),InvoicePdf.generate(21,LocalDate.of(2026,11,16),profile,Arrays.asList(new InvoiceEngine.Item("2026-11-16","Marken site","9.5","32","marken","32",true,"Marken: ordinary 7.5 h; OT1.5 2 h; OT2 0 h; unpaid meal 30 min"))));
         List<InvoiceEngine.Item> many=new ArrayList<>();
         for(int i=0;i<100;i++)many.add(new InvoiceEngine.Item(LocalDate.of(2026,1,1).plusDays(i).toString(), i==0?"Long location (São Paulo) - "+String.join(" ",Collections.nCopies(80,"Building")):addresses[i%addresses.length],"8:01","32",""));
         Files.write(Paths.get("build/qa/invoice-multipage.pdf"),InvoicePdf.generate(19,LocalDate.of(2026,11,16),profile,many));

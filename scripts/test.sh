@@ -26,3 +26,5 @@ PY
 "$JAVA_HOME/bin/javac" -encoding UTF-8 -d build/tests app/src/main/java/com/neonshift/app/OvertimeEngine.java tests/OvertimeTest.java
 "$JAVA_HOME/bin/java" -cp build/tests OvertimeTest
 "${NODE_BIN:-node}" tests/weekly.cjs
+"$JAVA_HOME/bin/javac" -encoding UTF-8 -d build/tests app/src/main/java/com/neonshift/app/MarkenEngine.java tests/MarkenTest.java
+"$JAVA_HOME/bin/java" -cp build/tests MarkenTest

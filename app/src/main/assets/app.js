@@ -84,6 +84,7 @@
     const dateKey=ts=>{const d=new Date(ts);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
     for(const record of state.history){if(!record.deleted&&(record.workDate||dateKey(record.startedAt))===dateKey(state.now))daily[record.config.currency]=(daily[record.config.currency]||0)+record.totals.net;}
     if(phase!=='idle'&&(s.workDate||dateKey(s.startedAt))===dateKey(state.now))daily[cfg.currency]=(daily[cfg.currency]||0)+t.net;
+    $('weeklyHint').textContent=window.I18n.t(s.config?.payRule==='marken'?'Marken: o almoço automático já está incluído no total.':'Inclui jornada atual; almoço descontado ao finalizar.');
     const week=window.Weekly.summary(state.history,s,t,state.config,state.now),weekly=$('weeklyTotals');weekly.replaceChildren(safeText('p',week.from+' · '+window.I18n.t('Segunda a domingo'),'help'));
     if(!Object.keys(week.groups).length)weekly.append(safeText('p',window.I18n.t('Nenhum trabalho nesta semana.')));
     for(const [currency,g] of Object.entries(week.groups)){weekly.append(safeText('strong',currency+' · '+(g.workedMs/3600000).toLocaleString(window.I18n.locale(),{maximumFractionDigits:2})+' h'),safeText('p',window.I18n.t('Bruto')+': '+money(g.gross)+' · '+window.I18n.t('Líquido')+': '+money(g.net)));for(const [day,ms]of Object.entries(g.days).sort())weekly.append(safeText('small',day+' · '+(ms/3600000).toLocaleString(window.I18n.locale(),{maximumFractionDigits:2})+' h','weekly-day'));}
@@ -105,11 +106,11 @@
     if(window.InvoiceUI)window.InvoiceUI.render(state);
     if(window.AppUpdateUI)window.AppUpdateUI.render(state.update);
   }
-  $('editCosts').onclick=()=>{editorOpen=!editorOpen;$('costEditor').classList.toggle('hidden',!editorOpen);if(editorOpen){$('manualClient').value=state.session.client||'';$('manualWorkType').value=state.session.workType||'';$('manualWorksite').value=state.session.worksite||'';$('manualKm').value=String(Math.round((state.session.km||0)*1000)/1000).replace('.',',');$('manualExtras').value=String(state.session.extras||0).replace('.',',');$('manualHours').value=String(Math.round(state.totals.workedMs/3600000*10000)/10000).replace('.',',');}};
+  $('editCosts').onclick=()=>{editorOpen=!editorOpen;$('costEditor').classList.toggle('hidden',!editorOpen);if(editorOpen){$('manualHours').disabled=state.session.config?.payRule==='marken';$('manualClient').value=state.session.client||'';$('manualWorkType').value=state.session.workType||'';$('manualWorksite').value=state.session.worksite||'';$('manualKm').value=String(Math.round((state.session.km||0)*1000)/1000).replace('.',',');$('manualExtras').value=String(state.session.extras||0).replace('.',',');$('manualHours').value=String(Math.round((state.trackedWorkedMs??state.totals.workedMs)/3600000*10000)/10000).replace('.',',');}};
   $('saveCosts').onclick=()=>{
     const km=number($('manualKm').value),extras=number($('manualExtras').value),hours=number($('manualHours').value);
     if(!Number.isFinite(km)||km>100000||!Number.isFinite(extras)||extras>1000000||!Number.isFinite(hours)||hours>100000){toast('Informe distância, gastos e horas válidos, usando vírgula ou ponto.');return;}
-    command('updateCosts',{km,extras,workedMs:Math.round(hours*3600000),worksite:$('manualWorksite').value.trim(),client:$('manualClient').value.trim(),workType:$('manualWorkType').value.trim()});editorOpen=false;$('costEditor').classList.add('hidden');
+    command('updateCosts',{km,extras,...(state.session.config?.payRule==='marken'?{}:{workedMs:Math.round(hours*3600000)}),worksite:$('manualWorksite').value.trim(),client:$('manualClient').value.trim(),workType:$('manualWorkType').value.trim()});editorOpen=false;$('costEditor').classList.add('hidden');
   };
   $('workClient').addEventListener('change',()=>{const c=(state.clients||[]).find(c=>c.id===$('workClient').value);if(c?.hourly>0)$('settingHourly').value=c.hourly;settingsDirty=true;});
   $('settingsForm').oninput=$('settingsForm').onchange=()=>{settingsDirty=true;};

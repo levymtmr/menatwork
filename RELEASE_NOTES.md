@@ -1,10 +1,12 @@
-Menatwork 1.8.0 — Overtime por cliente e total semanal
+Menatwork 1.9.0 — Regra Marken / SA Recruitment
 
-- Ative Overtime no cadastro de cada cliente: tarifa normal antes das 15h, 1,5× das 15h às 17h e 2× após as 17h. Apenas o tempo de cada faixa recebe o multiplicador.
-- O cálculo exclui pausas e almoço, e separa as faixas na virada do dia. Para overtime, informe o horário de início do almoço ao finalizar.
-- Jornadas manuais com overtime usam horários de início e término.
-- O invoice inclui o adicional de overtime e mantém o PDF em inglês.
-- Esta semana mostra horas pagas, bruto, líquido e todos os dias trabalhados de segunda a domingo. Inclui a jornada em andamento, exclui jornadas removidas e separa moedas.
-- Alterar o cliente não recalcula jornadas antigas.
+- Regra específica por cliente, independente do overtime por horário das 15h/17h. Clientes com Marken no nome usam essa regra por padrão.
+- Segunda a sexta: primeiras 8 horas do dia na faixa normal, próximas 2 a 1,5×, restante a 2×.
+- Sábado: primeiras 2 horas do dia a 1,5×, restante a 2×. Domingo: tudo a 2×.
+- Em cada turno acima de 4h, desconto automático de 30 minutos, uma única vez. Em dias úteis, o desconto sai da faixa normal disponível; no fim de semana, da faixa OT2. Sem pausa automática à tarde.
+- Registros do mesmo cliente e dia compartilham as faixas diárias. Corrigir, remover ou restaurar uma jornada recalcula as faixas afetadas; invoices vinculados podem precisar de revisão.
+- O invoice da Marken usa os minutos reais pagos, sem arredondar as horas a 15 minutos, e mostra normal, OT1.5, OT2 e almoço no PDF em inglês.
+- O resumo semanal inclui os cálculos da Marken e o almoço automático da jornada em andamento.
+- Jornadas e PDFs antigos mantêm os valores existentes. Para corrigir uma jornada antiga, abra o Histórico e escolha a regra Marken.
 
-Instale por cima da versão atual, sem desinstalar. Para clientes sem overtime, o valor da hora continua normal.
+Instale por cima da versão atual, sem desinstalar.

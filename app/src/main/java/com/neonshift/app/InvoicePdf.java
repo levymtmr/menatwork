@@ -107,7 +107,7 @@ public final class InvoicePdf {
         y += 24; line(M, W - M, y);
     }
     private void row(InvoiceEngine.Item i, int index) {
-        List<String> address = wrap(i.dayOff ? "Day off" : i.address+(i.premium.signum()>0?" — Overtime premium AUD "+i.premium.setScale(2,java.math.RoundingMode.HALF_UP).toPlainString():""), 110 * MM - 12, 9, false);
+        List<String> address = wrap(i.dayOff ? "Day off" : i.address+(i.note.isEmpty()?"":" - "+i.note)+(i.premium.signum()>0?" — Overtime premium AUD "+i.premium.setScale(2,java.math.RoundingMode.HALF_UP).toPlainString():""), 110 * MM - 12, 9, false);
         float height = Math.max(2, address.size()) * 12 + 12;
         if (y + height > H - M - 10) { newPage(); tableHead(); }
         if ((index & 1) == 1) rect(M, y, W - 2 * M, height, "0.973 0.980 0.984");

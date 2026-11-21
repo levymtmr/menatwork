@@ -518,5 +518,18 @@
   "Confira o adicional de overtime.": "Check the overtime premium.",
   "Atualize a jornada vinculada para incluir o overtime correto.": "Refresh the linked shift to include the correct overtime.",
   "Para overtime, ajuste os horários no histórico ou em Corrigir e encerrar.": "For overtime, edit the times in history or Correct and finish.",
-  "Inclui jornada atual; almoço descontado ao finalizar.": "Includes current shift; lunch is deducted when finishing."
+  "Inclui jornada atual; almoço descontado ao finalizar.": "Includes current shift; lunch is deducted when finishing.",
+  "Regra de pagamento": "Pay rule",
+  "Regra de pagamento inválida.": "Invalid pay rule.",
+  "Tarifa normal": "Standard rate",
+  "Overtime por horário: 15h / 17h": "Clock overtime: 3 pm / 5 pm",
+  "Marken: 30 min não pagos em turnos acima de 4h. Seg–sex: primeiras 8h normais, próximas 2h ×1,5, restante ×2. Sábado: primeiras 2h ×1,5, restante ×2. Domingo: tudo ×2.": "Marken: 30 unpaid minutes for shifts over 4h. Mon–Fri: first 8h ordinary, next 2h ×1.5, remainder ×2. Saturday: first 2h ×1.5, remainder ×2. Sunday: all ×2.",
+  "Marken: o almoço de 30 minutos é automático após 4h. Informe o período total incluindo almoço; não desconte novamente.": "Marken: a 30-minute meal is automatic for shifts over 4h. Enter the full period including lunch; do not deduct it again.",
+  "Marken: o almoço automático já está incluído no total.": "Marken: the automatic meal deduction is already included in the total.",
+  "Finalizar jornada Marken?": "Finish Marken shift?",
+  "Será descontado automaticamente um almoço de 30 minutos. Não há outra pausa automática.": "A 30-minute unpaid meal is deducted automatically. There is no other automatic break.",
+  "Turno de até 4 horas: sem desconto automático de almoço.": "Shift of 4 hours or less: no automatic meal deduction.",
+  "Confira a duração da jornada Marken.": "Check the Marken shift duration.",
+  "Atualize a jornada Marken vinculada antes de emitir.": "Refresh the linked Marken shift before issuing.",
+  "Almoço automático:": "Automatic meal:"
 }

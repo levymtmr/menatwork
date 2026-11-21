@@ -112,7 +112,7 @@ public class MainActivity extends Activity {
         final int[] choice={selected};
         AlertDialog dialog=new AlertDialog.Builder(this).setTitle(tr("Para qual cliente você vai trabalhar?"))
             .setSingleChoiceItems(labels,selected,(d,w)->{choice[0]=w;((AlertDialog)d).getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(true);})
-            .setPositiveButton(tr("Iniciar"),(d,w)->{try{if(store.session().has("phase"))return;JSONObject c=list.get(choice[0]),cfg=store.config();Store.put(cfg,"overtime",c.optBoolean("overtime"));Store.put(cfg,"clientId",c.getString("id"));Store.put(cfg,"client",c.getString("client"));if(c.has("hourly"))Store.put(cfg,"hourly",c.getDouble("hourly"));store.saveConfig(cfg);dispatch(action);}catch(Exception e){message(e.getMessage());}})
+            .setPositiveButton(tr("Iniciar"),(d,w)->{try{if(store.session().has("phase"))return;JSONObject c=list.get(choice[0]),cfg=store.config();Store.put(cfg,"payRule",ClientRegistry.rule(c));Store.put(cfg,"overtime",c.optBoolean("overtime"));Store.put(cfg,"clientId",c.getString("id"));Store.put(cfg,"client",c.getString("client"));if(c.has("hourly"))Store.put(cfg,"hourly",c.getDouble("hourly"));store.saveConfig(cfg);dispatch(action);}catch(Exception e){message(e.getMessage());}})
             .setNeutralButton(tr("Novo cliente"),(d,w)->web.evaluateJavascript("window.App.go('settings');window.ClientsUI.create();",null))
             .setNegativeButton(tr("Voltar"),null).create();dialog.show();dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(selected>=0);
     }
@@ -156,7 +156,7 @@ public class MainActivity extends Activity {
             JSONObject s = store.session();
             Store.put(j, "language", store.language());
             Store.put(j, "theme", store.theme());
-            Store.put(j, "session", s);
+            Store.put(j, "session", s);Store.put(j,"trackedWorkedMs",Store.elapsed(s));
             Store.put(j, "config", store.config());
             Store.put(j, "totals", Store.totals(s, store.config()));
             Store.put(j, "history", store.annotatedHistory());
@@ -178,7 +178,7 @@ public class MainActivity extends Activity {
                 try {
                     JSONObject p = new JSONObject(payload);
                     if ("saveClient".equals(action)) {
-                        JSONObject saved=clients.save(p);JSONObject cfg=store.config();if(saved.optString("id").equals(cfg.optString("clientId"))){Store.put(cfg,"overtime",saved.optBoolean("overtime"));Store.put(cfg,"client",saved.getString("client"));if(saved.has("hourly"))Store.put(cfg,"hourly",saved.getDouble("hourly"));store.saveConfig(cfg);}web.evaluateJavascript("window.clientSaved && window.clientSaved("+saved.toString()+")",null);message("Cliente salvo.");
+                        JSONObject saved=clients.save(p);JSONObject cfg=store.config();if(saved.optString("id").equals(cfg.optString("clientId"))){Store.put(cfg,"payRule",ClientRegistry.rule(saved));Store.put(cfg,"overtime",saved.optBoolean("overtime"));Store.put(cfg,"client",saved.getString("client"));if(saved.has("hourly"))Store.put(cfg,"hourly",saved.getDouble("hourly"));store.saveConfig(cfg);}web.evaluateJavascript("window.clientSaved && window.clientSaved("+saved.toString()+")",null);message("Cliente salvo.");
                     } else if ("saveLanguage".equals(action)) {
                         store.saveLanguage(p.getString("language"));
                     } else if ("saveTheme".equals(action)) {
@@ -268,7 +268,7 @@ public class MainActivity extends Activity {
                     } else if ("saveConfig".equals(action)) {
                         validateConfig(p);
                         String clientId=p.optString("clientId");
-                        if(!clientId.isEmpty()){JSONObject selected=null;JSONArray all=clients.list();for(int n=0;n<all.length();n++)if(clientId.equals(all.getJSONObject(n).optString("id")))selected=all.getJSONObject(n);if(selected==null)throw new IllegalArgumentException("Cliente não encontrado.");Store.put(p,"overtime",selected.optBoolean("overtime"));selected.put("hourly",p.getDouble("hourly"));clients.save(selected);Store.put(p,"client",selected.getString("client"));}
+                        if(!clientId.isEmpty()){JSONObject selected=null;JSONArray all=clients.list();for(int n=0;n<all.length();n++)if(clientId.equals(all.getJSONObject(n).optString("id")))selected=all.getJSONObject(n);if(selected==null)throw new IllegalArgumentException("Cliente não encontrado.");Store.put(p,"payRule",ClientRegistry.rule(selected));Store.put(p,"overtime",selected.optBoolean("overtime"));selected.put("hourly",p.getDouble("hourly"));clients.save(selected);Store.put(p,"client",selected.getString("client"));}
                         store.saveConfig(p);
                         message(store.session().has("phase") ? "Configurações salvas para a próxima jornada." : "Configurações salvas.");
                     } else if ("updateCosts".equals(action)) {
@@ -282,7 +282,7 @@ public class MainActivity extends Activity {
                         Store.put(s, "worksite", worksite);
                         String client=p.optString("client",s.optString("client")).trim(),workType=p.optString("workType",s.optString("workType")).trim();
                         if(client.length()>160||workType.length()>100)throw new IllegalArgumentException("Confira o cliente e o tipo de trabalho.");
-                        if(!ClientRegistry.key(client).equals(ClientRegistry.key(s.optString("client")))){Double rate=clients.hourly(client);if(rate!=null){JSONObject cfg=s.optJSONObject("config");if(cfg==null)cfg=store.config();Store.put(cfg,"hourly",rate);Store.put(cfg,"overtime",clients.overtime(client));Store.put(s,"config",cfg);}}
+                        if(!ClientRegistry.key(client).equals(ClientRegistry.key(s.optString("client")))){Double rate=clients.hourly(client);if(rate!=null){JSONObject cfg=s.optJSONObject("config");if(cfg==null)cfg=store.config();Store.put(cfg,"hourly",rate);Store.put(cfg,"payRule",clients.rule(client));Store.put(cfg,"overtime",clients.overtime(client));Store.put(s,"config",cfg);}}
                         Store.put(s,"client",client);Store.put(s,"workType",workType);
                         if (p.has("workedMs")) {
                             double ms = p.getDouble("workedMs");
@@ -309,6 +309,7 @@ public class MainActivity extends Activity {
     private void askLunch() {
         JSONObject captured=store.session();if(!captured.has("phase"))return;
         final String key=Store.id(captured),phase=captured.optString("phase");final long tracked=Store.elapsed(captured),endedAt=System.currentTimeMillis();
+        if(Store.isMarken(captured)){long meal=MarkenEngine.meal(tracked);confirm("Finalizar jornada Marken?",meal>0?"Será descontado automaticamente um almoço de 30 minutos. Não há outra pausa automática.":"Turno de até 4 horas: sem desconto automático de almoço.",()->{store.finishWithLunch(key,phase,"0",tracked,endedAt);stopService(new Intent(this,ShiftService.class));callback("journalSaved");message("Jornada salva.");});return;}
         android.widget.LinearLayout body=new android.widget.LinearLayout(this);body.setOrientation(1);int pad=(int)(24*getResources().getDisplayMetrics().density);body.setPadding(pad,8,pad,0);
         android.widget.RadioGroup options=new android.widget.RadioGroup(this);
         android.widget.RadioButton yes=new android.widget.RadioButton(this),no=new android.widget.RadioButton(this);yes.setId(View.generateViewId());no.setId(View.generateViewId());yes.setText(tr("Sim, descontar almoço"));no.setText(tr("Não tive almoço não pago"));options.addView(yes);options.addView(no);body.addView(options);

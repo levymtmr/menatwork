@@ -1,10 +1,10 @@
-# Menatwork 1.8.0
+# Menatwork 1.9.0
 
 Aplicativo Android pessoal, em inglês ou português, para acompanhar o ganho líquido estimado de uma jornada de trabalho. Interface de terminal retrofuturista inspirada no Pip-Boy: fósforo verde, linhas sutis de CRT, painéis monocromáticos e trabalhador animado. Ilustrações originais desenhadas em canvas.
 
 ## Instalar
 
-O instalador fica em `dist/neon-shift-1.8.0.apk`. Veja `INSTALAR.md`.
+O instalador fica em `dist/neon-shift-1.9.0.apk`. Veja `INSTALAR.md`.
 
 Compatível com Android 8.0 ou superior, incluindo o Galaxy S22 Ultra. O APK usa apenas Java e APIs do Android, sem bibliotecas nativas, conta no aplicativo ou servidor de registros. O GitHub hospeda as atualizações públicas. A interface é local em WebView; o GPS, a persistência e o acompanhamento em segundo plano são nativos.
 
@@ -210,3 +210,15 @@ Ative Overtime em Ajustes → Clientes → Editar. O cliente usa 1× antes das 1
 O invoice usa a tarifa do registro de overtime, mantém o arredondamento de horas a 15 minutos e acrescenta o prêmio de overtime calculado pelo tempo efetivo. Atualizar as jornadas vinculadas atualiza esse adicional. O PDF continua em inglês.
 
 O painel Esta semana considera todos os dias de segunda a domingo por data de trabalho, soma horas pagas, bruto e líquido, inclui a jornada atual e exclui registros removidos. Moedas ficam separadas. O almoço da jornada ativa é deduzido ao finalizar. Jornadas antigas preservam os valores registrados.
+
+### Marken / SA Recruitment (1.9.0)
+
+A regra `marken` segue as condições fornecidas pelo usuário, sem usar os cortes fixos de 15h/17h. Por data de trabalho e cliente, as primeiras 8 horas de segunda a sexta são normais, as próximas 2 são OT1.5 e o restante OT2. Aos sábados são 2 horas de OT1.5 e o restante OT2; aos domingos tudo é OT2.
+
+Cada turno estritamente acima de 4 horas desconta 30 minutos, uma única vez. Em dias úteis o desconto sai da faixa normal disponível (ou da próxima faixa disponível se o registro já começa após a cota normal); no fim de semana sai de OT2. Não pause o cronômetro para o almoço: informe o período completo e o app aplica o desconto. A data de trabalho do registro define o dia de pagamento; para trabalho atravessando dias com regras diferentes, registre um lançamento para cada data.
+
+Ao corrigir, remover ou restaurar registros Marken, os outros registros Marken do mesmo dia são recalculados para não reiniciar as faixas diárias. O vínculo do invoice acusa mudanças; os PDFs já emitidos permanecem intactos. Configurar o cliente não migra automaticamente jornadas históricas: use Histórico → Editar → Regra Marken.
+
+O invoice Marken usa horas reais pagas, sem teto de 15 minutos, e inclui as faixas e o almoço em inglês. Os gastos pessoais com carro continuam no líquido estimado e não são adicionados ao invoice como auxílio de viagem ou alimentação.
+
+Teste adicional de integração do Store com preferências Android em memória: baixe `org.json:json:20240303` do Maven Central para uma pasta temporária e execute `JSON_TEST_JAR=/caminho/json.jar scripts/test-marken-store.sh`. O CI verifica o SHA-256 desse arquivo e executa o mesmo teste. As classes em `tests/jvm/android` não entram no APK.

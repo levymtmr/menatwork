@@ -1,7 +1,7 @@
 'use strict';
 (() => {
   const $=id=>document.getElementById(id);
-  let latest={stage:'idle',currentVersion:'1.8.0',message:'Toque para procurar uma nova versão no GitHub.',progress:0};
+  let latest={stage:'idle',currentVersion:'1.9.0',message:'Toque para procurar uma nova versão no GitHub.',progress:0};
   let requested=false;
   function command(action){
     if(typeof Android==='undefined'){$('updateMessage').textContent='Instale o APK para verificar e instalar atualizações.';return;}
