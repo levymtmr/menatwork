@@ -1,10 +1,10 @@
-# Menatwork 1.9.0
+# Menatwork 1.9.1
 
 Aplicativo Android pessoal, em inglês ou português, para acompanhar o ganho líquido estimado de uma jornada de trabalho. Interface de terminal retrofuturista inspirada no Pip-Boy: fósforo verde, linhas sutis de CRT, painéis monocromáticos e trabalhador animado. Ilustrações originais desenhadas em canvas.
 
 ## Instalar
 
-O instalador fica em `dist/neon-shift-1.9.0.apk`. Veja `INSTALAR.md`.
+O instalador fica em `dist/neon-shift-1.9.1.apk`. Veja `INSTALAR.md`.
 
 Compatível com Android 8.0 ou superior, incluindo o Galaxy S22 Ultra. O APK usa apenas Java e APIs do Android, sem bibliotecas nativas, conta no aplicativo ou servidor de registros. O GitHub hospeda as atualizações públicas. A interface é local em WebView; o GPS, a persistência e o acompanhamento em segundo plano são nativos.
 
@@ -222,3 +222,7 @@ Ao corrigir, remover ou restaurar registros Marken, os outros registros Marken d
 O invoice Marken usa horas reais pagas, sem teto de 15 minutos, e inclui as faixas e o almoço em inglês. Os gastos pessoais com carro continuam no líquido estimado e não são adicionados ao invoice como auxílio de viagem ou alimentação.
 
 Teste adicional de integração do Store com preferências Android em memória: baixe `org.json:json:20240303` do Maven Central para uma pasta temporária e execute `JSON_TEST_JAR=/caminho/json.jar scripts/test-marken-store.sh`. O CI verifica o SHA-256 desse arquivo e executa o mesmo teste. As classes em `tests/jvm/android` não entram no APK.
+
+### Bruto em destaque (1.9.1)
+
+O contador da jornada e os cards do histórico mostram o bruto acumulado, incluindo overtime e já considerando o tempo não pago. Imposto, custos do carro, total de descontos e líquido estimado aparecem nos detalhes. Os acumulados de hoje, da semana e do histórico também usam o bruto como valor principal.

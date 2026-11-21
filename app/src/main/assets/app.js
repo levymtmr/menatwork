@@ -76,20 +76,20 @@
     const names={idle:'PRONTO',commute:'EM TRAJETO',work:'TRABALHANDO',pause:'EM PAUSA',return:'VOLTANDO'};
     $('status').textContent=native?names[phase]:'PRÉVIA';$('status').classList.toggle('hidden',phase==='idle');$('status').classList.toggle('live',phase==='work'||phase==='commute'||phase==='return');
     $('todayDate').textContent=new Date(state.now).toLocaleDateString(window.I18n.locale(),{day:'2-digit',month:'2-digit'});
-    $('net').textContent=money(t.net);$('net').classList.toggle('negative',t.net<0);
+    $('gross').textContent=money(t.gross);$('gross').classList.toggle('negative',t.gross<0);$('balanceDeductions').textContent='− '+money(t.tax+t.carCosts);$('balanceNet').textContent=money(t.net);$('breakdownNet').textContent=money(t.net);
     $('currencyBadge').textContent=cfg.currency;$('timer').textContent=time(t.workedMs);$('hourly').textContent=money(cfg.hourly);
     const notes={idle:'Comece pelo trajeto ou inicie direto no trabalho.',commute:'Registrando ida. Toque em “Cheguei” quando começar a trabalhar.',work:'Jornada ativa. Seu ganho acompanha o tempo, mesmo com a tela apagada.',pause:'Pausa ativa. O tempo pago está parado.',return:'Trabalho finalizado. Registrando o custo da volta.'};
     $('phaseNote').textContent=notes[phase];
     const daily={};
     const dateKey=ts=>{const d=new Date(ts);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
-    for(const record of state.history){if(!record.deleted&&(record.workDate||dateKey(record.startedAt))===dateKey(state.now))daily[record.config.currency]=(daily[record.config.currency]||0)+record.totals.net;}
-    if(phase!=='idle'&&(s.workDate||dateKey(s.startedAt))===dateKey(state.now))daily[cfg.currency]=(daily[cfg.currency]||0)+t.net;
+    for(const record of state.history){if(!record.deleted&&(record.workDate||dateKey(record.startedAt))===dateKey(state.now))daily[record.config.currency]=(daily[record.config.currency]||0)+record.totals.gross;}
+    if(phase!=='idle'&&(s.workDate||dateKey(s.startedAt))===dateKey(state.now))daily[cfg.currency]=(daily[cfg.currency]||0)+t.gross;
     $('weeklyHint').textContent=window.I18n.t(s.config?.payRule==='marken'?'Marken: o almoço automático já está incluído no total.':'Inclui jornada atual; almoço descontado ao finalizar.');
     const week=window.Weekly.summary(state.history,s,t,state.config,state.now),weekly=$('weeklyTotals');weekly.replaceChildren(safeText('p',week.from+' · '+window.I18n.t('Segunda a domingo'),'help'));
     if(!Object.keys(week.groups).length)weekly.append(safeText('p',window.I18n.t('Nenhum trabalho nesta semana.')));
-    for(const [currency,g] of Object.entries(week.groups)){weekly.append(safeText('strong',currency+' · '+(g.workedMs/3600000).toLocaleString(window.I18n.locale(),{maximumFractionDigits:2})+' h'),safeText('p',window.I18n.t('Bruto')+': '+money(g.gross)+' · '+window.I18n.t('Líquido')+': '+money(g.net)));for(const [day,ms]of Object.entries(g.days).sort())weekly.append(safeText('small',day+' · '+(ms/3600000).toLocaleString(window.I18n.locale(),{maximumFractionDigits:2})+' h','weekly-day'));}
+    for(const [currency,g] of Object.entries(week.groups)){weekly.append(safeText('strong',window.I18n.t('Bruto')+' · '+currency+' '+money(g.gross),'weekly-gross'),safeText('p',(g.workedMs/3600000).toLocaleString(window.I18n.locale(),{maximumFractionDigits:2})+' h · '+window.I18n.t('Líquido estimado')+': '+money(g.net)));for(const [day,ms]of Object.entries(g.days).sort())weekly.append(safeText('small',day+' · '+(ms/3600000).toLocaleString(window.I18n.locale(),{maximumFractionDigits:2})+' h','weekly-day'));}
     const summary=$('dailySummary');summary.classList.toggle('hidden',!Object.keys(daily).length);
-    summary.replaceChildren(safeText('span','ACUMULADO HOJE','tiny'),...Object.entries(daily).map(([currency,value])=>safeText('strong',currency+' '+money(value))),safeText('small','Por dia de trabalho · inclui jornada atual'));
+    summary.replaceChildren(safeText('span','BRUTO ACUMULADO HOJE','tiny'),...Object.entries(daily).map(([currency,value])=>safeText('strong',currency+' '+money(value))),safeText('small','Por dia de trabalho · inclui jornada atual'));
     $('recovery').classList.toggle('hidden',phase==='idle'||state.serviceRunning);
     renderRows(t,cfg);renderActions(phase);
     $('distance').replaceChildren(document.createTextNode((s.km||0).toLocaleString(window.I18n.locale(),{minimumFractionDigits:1,maximumFractionDigits:1})+' '),safeText('small','km'));

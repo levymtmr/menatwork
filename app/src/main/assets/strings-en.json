@@ -531,5 +531,9 @@
   "Turno de até 4 horas: sem desconto automático de almoço.": "Shift of 4 hours or less: no automatic meal deduction.",
   "Confira a duração da jornada Marken.": "Check the Marken shift duration.",
   "Atualize a jornada Marken vinculada antes de emitir.": "Refresh the linked Marken shift before issuing.",
-  "Almoço automático:": "Automatic meal:"
+  "Almoço automático:": "Automatic meal:",
+  "BRUTO ACUMULADO": "GROSS EARNINGS",
+  "BRUTO ACUMULADO HOJE": "TODAY'S GROSS EARNINGS",
+  "Descontos estimados": "Estimated deductions",
+  "Líquido estimado": "Estimated net"
 }
