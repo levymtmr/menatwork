@@ -28,6 +28,13 @@ jobs:
           curl -fsSL https://repo.maven.apache.org/maven2/org/json/json/20240303/json-20240303.jar -o "$RUNNER_TEMP/json.jar"
           echo "3cf6cd6892e32e2b4c1c39e0f52f5248a2f5b37646fdfbb79a66b46b618414ed  $RUNNER_TEMP/json.jar" | sha256sum -c -
           JSON_TEST_JAR="$RUNNER_TEMP/json.jar" scripts/test-marken-store.sh
+      - name: Test app interface and Marken invoice
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/menatwork-browsers
+        run: |
+          npm install --prefix "$RUNNER_TEMP/menatwork-ui" --no-audit --no-fund playwright@1.57.0
+          node "$RUNNER_TEMP/menatwork-ui/node_modules/playwright/cli.js" install chromium --only-shell
+          NODE_PATH="$RUNNER_TEMP/menatwork-ui/node_modules" node tests/ui.cjs
       - name: Compile smoke build with a temporary CI key
         env:
           NEON_SIGNING_KEY: ${{ runner.temp }}/neon-shift-ci.jks
