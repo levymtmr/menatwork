@@ -40,7 +40,7 @@ final class ClientRegistry {
   String id=input.optString("id"),name=input.optString("client").trim(),address=input.optString("client_address").trim(),email=input.optString("client_email").trim(),abn=input.optString("client_abn").trim();
   if(name.isEmpty()||name.length()>120||address.length()>350||email.length()>160||abn.length()>40)throw new IllegalArgumentException("Confira o nome e os dados do cliente.");
   if(!email.isEmpty()&&!email.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+"))throw new IllegalArgumentException("Confira o e-mail do cliente.");
-  Double hourly=null;if(input.has("hourly")&&!input.isNull("hourly")){hourly=Double.valueOf(input.getString("hourly").replace(',','.'));if(!Double.isFinite(hourly)||hourly<=0||hourly>10000)throw new IllegalArgumentException("Confira o valor da hora do cliente.");}
+  Double hourly=null;if(input.has("hourly")&&!input.isNull("hourly")){hourly=Double.valueOf(String.valueOf(input.get("hourly")).replace(',','.'));if(!Double.isFinite(hourly)||hourly<=0||hourly>10000)throw new IllegalArgumentException("Confira o valor da hora do cliente.");}
   JSONArray all=list();JSONObject saved=null;
   for(int n=0;n<all.length();n++){JSONObject item=all.getJSONObject(n);if(item.optString("id").equals(id))saved=item;else if(key(item.getString("client")).equals(key(name)))throw new IllegalArgumentException("Já existe um cliente com esse nome. Escolha o cliente cadastrado ou edite os dados dele.");}
   if(saved==null){if(!id.isEmpty())throw new IllegalArgumentException("Cliente não encontrado.");saved=new JSONObject();saved.put("id",UUID.randomUUID().toString());all.put(saved);}
