@@ -1,12 +1,12 @@
-Menatwork 1.10.0 — Novo rascunho e dois PDFs para Marken
+Menatwork 1.10.1 — Invoice por agrupamento de jornadas
 
-- Rascunho em três etapas: cliente e serviço, trabalhos incluídos, revisão e geração.
-- Escolha jornadas salvas, busque cliente/data/local e crie ou edite jornadas sem sair do invoice.
-- Campos manuais possuem identificadores independentes; a edição do segundo e terceiro itens permanece estável após salvar e atualizar a tela.
-- Jornadas vinculadas têm Editar jornada para corrigir horários e recalcular overtime, sem perder os outros itens do rascunho.
-- Marken segue o modelo anexado: soma por faixa no período e aplica as tarifas; o exemplo de 18 a 20/11/2026 fecha em AUD 871,84.
-- Emite dois arquivos: timesheet detalhado com espaço para assinatura, e invoice resumido com período, serviços e bruto, sem horas.
-- Permite anexar o timesheet assinado e compartilhar os dois PDFs separados, com assunto e mensagem de e-mail em inglês para revisão.
-- A versão gerada sem assinatura é identificada como pendente de assinatura. PDFs antigos são preservados.
+- Invoice permite selecionar e remover jornadas, conferir o bruto e visualizar/emitir os PDFs.
+- Criação e edição de jornadas ficam exclusivamente no Histórico.
+- Alterações salvas e remoções no Histórico atualizam automaticamente o rascunho, inclusive após reabrir o app.
+- Cada jornada mantém sua própria tarifa, overtime e valor bruto, sem descontos pessoais no invoice.
+- É possível emitir vários invoices para a mesma semana com grupos distintos de jornadas, sem faturar uma jornada duas vezes.
+- Dados de prestador, pagamento, descrição e timesheet ficam em Ajustes.
+- PDFs emitidos permanecem preservados; alterações posteriores nas jornadas sinalizam revisão necessária.
+- Marken mantém os dois PDFs separados e o arredondamento por faixa do modelo fornecido.
 
-Instale o APK por cima da versão atual, sem desinstalar.
+Instale por cima da versão atual, sem desinstalar.

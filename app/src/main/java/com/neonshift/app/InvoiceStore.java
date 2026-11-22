@@ -53,7 +53,8 @@ final class InvoiceStore {
         if (!j.has("number")) Store.put(j, "number", nextNumber());
         if (!j.has("rate")) Store.put(j, "rate", seed.optJSONObject("profile").optString("rate", "32"));
         if (!j.has("rows")) Store.put(j, "rows", new JSONArray());
-        return j;
+        try { JSONObject synced=refreshSources(j);if(!synced.toString().equals(j.toString()))saveDraft(synced);return synced; }
+        catch(Exception e){return j;}
     }
     void saveDraft(JSONObject draft) {
         if (draft.toString().length() > 500000) throw new IllegalArgumentException("Rascunho muito grande.");
@@ -91,7 +92,10 @@ final class InvoiceStore {
             if (!dayOff && InvoiceEngine.hours(hours).signum() == 0) continue;
             String source = r.optString("sourceId", "");
             if (!source.isEmpty() && !linked.add(source)) throw new IllegalArgumentException("Uma jornada foi incluída duas vezes.");
-            items.add(new InvoiceEngine.Item(r.getString("date"), address, hours, r.optString("sourceRate",rate), source,r.optString("overtimePremium","0"),r.optBoolean("exactHours"),r.optString("billingNote")));
+            if(draft.optBoolean("aggregationOnly")&&source.isEmpty())throw new IllegalArgumentException("Selecione apenas jornadas salvas no Histórico.");
+            InvoiceEngine.Item item=new InvoiceEngine.Item(r.getString("date"), address, hours, r.optString("sourceRate",rate), source,r.optString("overtimePremium","0"),r.optBoolean("exactHours"),r.optString("billingNote"));
+            if(r.has("sourceGross")&&!source.isEmpty())item=InvoiceEngine.withAmount(item,new java.math.BigDecimal(r.optString("sourceGross")));
+            items.add(item);
         }
         InvoiceEngine.total(items);
         if(paired(draft)){List<MarkenBilling.Entry> entries=sheetEntries(draft);java.math.BigDecimal target=MarkenBilling.total(entries),difference=target.subtract(InvoiceEngine.total(items));int last=items.size()-1;items.set(last,InvoiceEngine.withAmount(items.get(last),items.get(last).amount.add(difference)));}
@@ -126,7 +130,7 @@ final class InvoiceStore {
     File preview(JSONObject draft) throws Exception {
         Map<String, String> profile = profile(draft);
         List<InvoiceEngine.Item> items = items(draft);
-        if(paired(draft))validateDraftSources(draft);
+        validateDraftSources(draft);
         byte[] bytes = InvoicePdf.generate(draft.getInt("number"), today(), profile, items,paired(draft));
         File folder = folder();
         // Only retain a bounded number of temporary previews; issued files are immutable.
@@ -188,6 +192,11 @@ final class InvoiceStore {
             if(source==null||source.optBoolean("deleted"))throw new IllegalArgumentException("Uma jornada foi removida. Toque em Atualizar jornadas vinculadas.");
             if(Store.isMarken(source)){if(!row.has("timesheet")||!TimesheetData.read(row.getJSONObject("timesheet")).signature().equals(TimesheetData.read(TimesheetData.fromSource(source)).signature()))throw new IllegalArgumentException("Atualize as jornadas vinculadas para gerar o timesheet correto.");}
             if(Store.isMarken(source)&&!row.optBoolean("exactHours"))throw new IllegalArgumentException("Atualize a jornada Marken vinculada antes de emitir.");
+            if(draft.optBoolean("aggregationOnly")){
+                if(!ClientRegistry.key(source.optString("client")).equals(ClientRegistry.key(draft.getJSONObject("profile").optString("client"))))throw new IllegalArgumentException("Selecione jornadas de um único cliente por invoice.");
+                if(!"AUD".equals(source.getJSONObject("config").optString("currency"))||!row.optString("date").equals(Store.date(source))||!row.optString("address").equals(source.optString("worksite"))||Math.abs(InvoiceEngine.hours(row.optString("hours")).doubleValue()-source.optLong("workedMs")/3600000.0)>0.000001)throw new IllegalArgumentException("Os dados da jornada mudaram. Confira o Histórico.");
+                if(!row.has("sourceGross")||Math.abs(row.optDouble("sourceGross")-source.getJSONObject("totals").getDouble("gross"))>0.000001)throw new IllegalArgumentException("O bruto mudou. Atualize as jornadas do rascunho.");
+            }
             JSONObject totals=source.optJSONObject("totals");double premium=totals==null?0:totals.optDouble("overtimePremium",0);
             if(source.optJSONObject("config").optBoolean("overtime")&&(Math.abs(row.optDouble("overtimePremium",0)-premium)>0.00001||Math.abs(row.optDouble("sourceRate",0)-source.getJSONObject("config").getDouble("hourly"))>0.00001||Math.abs(InvoiceEngine.hours(row.optString("hours")).doubleValue()-source.optLong("workedMs")/3600000.0)>0.000001))throw new IllegalArgumentException("Atualize a jornada vinculada para incluir o overtime correto.");
             if(row.has("sourceFingerprint")&&!row.getString("sourceFingerprint").equals(Store.fingerprint(source)))
@@ -216,11 +225,11 @@ final class InvoiceStore {
             JSONObject row=new JSONObject(rows.getJSONObject(n).toString());String id=row.optString("sourceId");
             if(!id.isEmpty()){
                 JSONObject source=journals.findJournal(id);if(source==null||source.optBoolean("deleted"))continue;
-                if(Store.isMarken(source))row.put("timesheet",TimesheetData.fromSource(source));else row.remove("timesheet");
-                row.put("exactHours",Store.isMarken(source));row.put("billingNote",source.optString("billingNote"));
-                row.put("overtimePremium",source.optJSONObject("totals").optDouble("overtimePremium",0));if(source.optJSONObject("config").optBoolean("overtime"))row.put("sourceRate",source.getJSONObject("config").getDouble("hourly"));else row.remove("sourceRate");
+                if(Store.isMarken(source)){try{row.put("timesheet",TimesheetData.fromSource(source));}catch(IllegalArgumentException e){row.remove("timesheet");}}else row.remove("timesheet");
+                row.put("exactHours",true);row.put("sourceGross",source.getJSONObject("totals").getDouble("gross"));row.put("billingNote",source.optString("billingNote"));
+                row.put("overtimePremium",source.optJSONObject("totals").optDouble("overtimePremium",0));row.put("sourceRate",source.getJSONObject("config").getDouble("hourly"));
                 row.put("date",Store.date(source));row.put("hours",java.math.BigDecimal.valueOf(source.optLong("workedMs")).divide(new java.math.BigDecimal("3600000"),12,java.math.RoundingMode.HALF_UP).stripTrailingZeros().toPlainString());
-                if(!source.optString("worksite").trim().isEmpty())row.put("address",source.optString("worksite"));
+                row.put("address",source.optString("worksite"));
                 row.put("sourceFingerprint",Store.fingerprint(source));row.put("workType",source.optString("workType"));
             }
             updated.put(row);

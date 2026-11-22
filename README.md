@@ -1,10 +1,10 @@
-# Menatwork 1.10.0
+# Menatwork 1.10.1
 
 Aplicativo Android pessoal, em inglês ou português, para acompanhar o ganho líquido estimado de uma jornada de trabalho. Interface de terminal retrofuturista inspirada no Pip-Boy: fósforo verde, linhas sutis de CRT, painéis monocromáticos e trabalhador animado. Ilustrações originais desenhadas em canvas.
 
 ## Instalar
 
-O instalador fica em `dist/neon-shift-1.10.0.apk`. Veja `INSTALAR.md`.
+O instalador fica em `dist/neon-shift-1.10.1.apk`. Veja `INSTALAR.md`.
 
 Compatível com Android 8.0 ou superior, incluindo o Galaxy S22 Ultra. O APK usa apenas Java e APIs do Android, sem bibliotecas nativas, conta no aplicativo ou servidor de registros. O GitHub hospeda as atualizações públicas. A interface é local em WebView; o GPS, a persistência e o acompanhamento em segundo plano são nativos.
 
@@ -231,7 +231,7 @@ O contador da jornada e os cards do histórico mostram o bruto acumulado, inclui
 
 Novos PDFs mostram data, local/descrição e valores brutos, sem imprimir automaticamente horas normais, overtime, almoço ou tarifa por hora. Os cálculos, notas de faturamento e dados detalhados permanecem no app; o total inclui o adicional de overtime. A descrição livre digitada pelo usuário é impressa como informada. PDFs já emitidos não são alterados. Envie o timesheet assinado separadamente quando solicitado pelo cliente.
 
-### Rascunho e envio em dois arquivos (1.10.0)
+### Rascunho e envio em dois arquivos (1.10.1)
 
 A tela do invoice organiza cliente/serviço, seleção de jornadas e revisão. Os campos de cada item manual têm IDs únicos, e os detalhes do rascunho não são reconstruídos pela atualização periódica. As horas de uma jornada com overtime são corrigidas no editor da própria jornada pelo botão Editar jornada (ou ao tocar no campo protegido); ao salvar, os itens vinculados são atualizados e os itens manuais permanecem intactos. O status de rascunho salvo depende da confirmação nativa de gravação.
 
@@ -242,3 +242,7 @@ A emissão grava `invoice_...pdf` e `timesheet_...pdf` separadamente. O invoice 
 O app permite importar uma cópia PDF assinada (até 20 MB). Ele não verifica uma assinatura digital nem assina pelo responsável; o usuário deve escolher a versão aprovada. O compartilhamento de um par usa ACTION_SEND_MULTIPLE, duas URIs com concessão temporária de leitura e uma mensagem em inglês. Sem cópia assinada, o app pede para anexá-la ou compartilhar para revisão e não afirma que o timesheet está assinado. E-mail de destino é o configurado no cliente; quando vazio no fluxo Marken, usa accounts@sarecruitment.com.au. O usuário revisa e envia no aplicativo escolhido. Não há envio automático.
 
 Validação adicional: `JSON_TEST_JAR=/caminho/json.jar scripts/test-paired-invoices.sh` executa a implementação real de InvoiceStore/InvoiceShare com preferências e intents Android em memória. As classes de teste não entram no APK.
+
+### Invoice por agrupamento (1.10.1)
+
+O criador seleciona jornadas salvas de um único cliente, apresenta os valores brutos e permite remover jornadas antes de emitir. Horários, local e tarifa são editados somente no Histórico; o rascunho acompanha os registros salvos. Dados de emissão ficam em Ajustes. Vários invoices podem usar jornadas diferentes da mesma semana; jornadas já faturadas não podem ser duplicadas em outro invoice ativo. PDFs emitidos são preservados e sinalizados para revisão se a origem mudar.

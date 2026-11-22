@@ -605,5 +605,18 @@
   "itens": "items",
   "COMPLETAR HORÁRIOS": "COMPLETE SHIFT TIMES",
   "Horas pagas": "Paid hours",
-  "7,5 ou 07:30": "7.5 or 07:30"
+  "7,5 ou 07:30": "7.5 or 07:30",
+  "1. Cliente": "1. Client",
+  "IR AO HISTÓRICO": "GO TO HISTORY",
+  "DADOS PARA EMISSÃO": "DOCUMENT SETTINGS",
+  "Configure aqui seus dados e a descrição dos PDFs. Horários, tarifa e local são editados no Histórico.": "Configure your details and PDF description here. Edit shift times, rate and site in History.",
+  "Selecione as jornadas deste invoice. Crie e edite jornadas no Histórico.": "Select shifts for this invoice. Create and edit shifts in History.",
+  "Alterações salvas no Histórico atualizam este rascunho. Você pode emitir vários invoices na mesma semana, selecionando jornadas diferentes.": "Changes saved in History update this draft. Issue multiple invoices for the same week by selecting different shifts.",
+  "Nenhuma jornada disponível para este cliente. Confira o Histórico ou ajuste a busca.": "No shifts available for this client. Check History or adjust your search.",
+  "AJUSTAR NO HISTÓRICO": "UPDATE IN HISTORY",
+  "Cada invoice deve conter jornadas de um único cliente. Emita este invoice ou inicie outro.": "Each invoice must contain shifts for one client. Issue this invoice or start another.",
+  "Remova as jornadas selecionadas antes de trocar o cliente.": "Remove the selected shifts before changing the client.",
+  "Selecione apenas jornadas salvas no Histórico.": "Select only shifts saved in History.",
+  "Item antigo sem jornada vinculada. Remova e selecione uma jornada do Histórico.": "Legacy item without a linked shift. Remove it and select a shift from History.",
+  "O invoice usa AUD. Corrija a moeda da jornada no Histórico antes de adicioná-la.": "Invoices use AUD. Correct the shift currency in History before adding it."
 }
