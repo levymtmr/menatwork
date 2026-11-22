@@ -618,5 +618,9 @@
   "Remova as jornadas selecionadas antes de trocar o cliente.": "Remove the selected shifts before changing the client.",
   "Selecione apenas jornadas salvas no Histórico.": "Select only shifts saved in History.",
   "Item antigo sem jornada vinculada. Remova e selecione uma jornada do Histórico.": "Legacy item without a linked shift. Remove it and select a shift from History.",
-  "O invoice usa AUD. Corrija a moeda da jornada no Histórico antes de adicioná-la.": "Invoices use AUD. Correct the shift currency in History before adding it."
+  "O invoice usa AUD. Corrija a moeda da jornada no Histórico antes de adicioná-la.": "Invoices use AUD. Correct the shift currency in History before adding it.",
+  "Início e término não registrados": "Start and finish not recorded",
+  "Jornada. Deslize para a esquerda para remover.": "Shift. Swipe left to remove.",
+  "Jornada removida do invoice.": "Shift removed from invoice.",
+  "DESFAZER": "UNDO"
 }

@@ -1,6 +1,7 @@
 'use strict';
 (() => {
   const $=id=>document.getElementById(id), native=typeof Android!=='undefined';
+  let removedRow=null;
   let state,initialized=false,saveTimer,recordsSignature='',editing=false,limit=20,trashLimit=20,fieldCounter=0,pickerLimit=30,pickerSignature='',saveRevision=0;
   const filters=window.Listing.controls('invoices',()=>{limit=20;trashLimit=20;recordsSignature='';if(state)records();});
   const fields={
@@ -41,20 +42,39 @@
   function updateTotals(){
     const draft=readDraft();let actual=0,quarters=0,cents=0,invalid=false;
     draft.rows.forEach((r,i)=>{const target=$('invoiceRows').children[i].querySelector('.line-total');try{const l=line(r,draft.rate);actual+=l.actual;quarters+=l.quarters;cents+=l.cents;target.textContent=cash(l.cents);}catch(e){target.textContent=e.message;invalid=true;}});
-    const pair=draft.rows.some(r=>r.timesheet)||/\bmarken\b/i.test(draft.profile.client);$('markenTotalHint').classList.toggle('hidden',!pair);$('timesheetPreview').classList.toggle('hidden',!pair);$('invoiceRowCount').textContent=draft.rows.length+' itens';$('invoiceEmpty').classList.toggle('hidden',draft.rows.length>0);renderPicker();$('invoiceIssue').textContent=pair?'EMITIR INVOICE + TIMESHEET':'EMITIR E GUARDAR PDF';if(pair)try{cents=markenCents(draft.rows);}catch(e){invalid=true;error(e.message);}
-    $('invoiceActual').textContent=actual.toLocaleString(window.I18n.locale(),{maximumFractionDigits:4})+' h';$('invoiceBilled').textContent=(quarters/4).toLocaleString(window.I18n.locale(),{maximumFractionDigits:2})+' h';$('invoiceTotal').textContent=invalid?'Confira as linhas':cash(cents);
+    const pair=draft.rows.some(r=>r.timesheet)||/\bmarken\b/i.test(draft.profile.client);$('timesheetPreview').classList.toggle('hidden',!pair);$('invoiceRowCount').textContent=draft.rows.length+' itens';$('invoiceEmpty').classList.toggle('hidden',draft.rows.length>0);renderPicker();$('invoiceIssue').textContent=pair?'EMITIR INVOICE + TIMESHEET':'EMITIR E GUARDAR PDF';if(pair)try{cents=markenCents(draft.rows);}catch(e){invalid=true;error(e.message);}
+    $('invoiceTotal').textContent=invalid?'Confira as linhas':cash(cents);
   }
   function save(){clearTimeout(saveTimer);if(native&&initialized)cmd('saveInvoiceDraft',{...readDraft(),_saveRevision:saveRevision});}
   function changed(){editing=true;saveRevision++;$('invoiceSaveState').textContent='SALVANDO...';updateTotals();clearTimeout(saveTimer);saveTimer=setTimeout(save,500);}
+  function removeRow(box){
+    if(!box.isConnected)return;
+    removedRow={row:JSON.parse(box.dataset.row),index:[...$('invoiceRows').children].indexOf(box)};
+    box.remove();$('invoiceUndo').classList.remove('hidden');changed();
+  }
+  function swipeRow(box,content,remove){
+    let start=null,offset=0,open=false;
+    const paint=x=>{offset=x;content.style.transform=`translateX(${x}px)`;};
+    const settle=()=>{content.classList.remove('dragging');paint(open?-96:0);remove.tabIndex=open?0:-1;remove.disabled=!open;};
+    content.onpointerdown=e=>{if(!e.isPrimary||e.button!==0)return;start={x:e.clientX,y:e.clientY,id:e.pointerId,base:open?-96:0,axis:null};};
+    content.onpointermove=e=>{if(!start||e.pointerId!==start.id)return;const dx=e.clientX-start.x,dy=e.clientY-start.y;if(!start.axis){if(Math.max(Math.abs(dx),Math.abs(dy))<10)return;start.axis=Math.abs(dx)>Math.abs(dy)*1.25?'x':'y';if(start.axis==='x'){content.setPointerCapture(e.pointerId);content.classList.add('dragging');}}if(start.axis!=='x')return;e.preventDefault();paint(Math.min(0,Math.max(-box.clientWidth,start.base+dx)));};
+    const finish=e=>{if(!start||e.pointerId!==start.id)return;const horizontal=start.axis==='x';start=null;if(e.type==='pointercancel'){open=false;settle();return;}if(!horizontal)return;if(-offset>=Math.max(130,box.clientWidth*.55)){removeRow(box);return;}open=-offset>=48;settle();};
+    content.onpointerup=finish;content.onpointercancel=finish;
+    content.onkeydown=e=>{if(e.key==='ArrowLeft'){open=true;settle();remove.focus();e.preventDefault();}else if(e.key==='Escape'||e.key==='ArrowRight'){open=false;settle();e.preventDefault();}else if(e.key==='Delete'){removeRow(box);e.preventDefault();}};
+    remove.disabled=true;remove.tabIndex=-1;
+  }
   function addRow(row,persist=true){
     const box=text('article','','invoice-entry');box.dataset.row=JSON.stringify(row);box.dataset.sourceId=row.sourceId||'';
-    const top=text('div','','entry-top');top.append(userText(text('strong',row.date||'')));
-    const remove=text('button','×','remove-entry');remove.type='button';remove.setAttribute('aria-label','Remover lançamento');remove.onclick=()=>{box.remove();changed();};top.append(remove);box.append(top);
-    box.append(userText(text('p',row.shiftTime||(String(row.hours)+' h'),'muted')),userText(text('p',row.address||'','record-site')),userText(text('p',row.workType||'','muted')),text('p','','line-total'));
-    if(!row.sourceId)box.append(text('p','Item antigo sem jornada vinculada. Remova e selecione uma jornada do Histórico.','notice'));
-    $('invoiceRows').append(box);if(persist)changed();return box;
+    const remove=text('button','REMOVER','swipe-remove remove-entry');remove.type='button';remove.setAttribute('aria-label','Remover lançamento');remove.onclick=()=>removeRow(box);
+    const content=text('div','','shift-card-content');content.tabIndex=0;content.setAttribute('aria-label','Jornada. Deslize para a esquerda para remover.');
+    const top=text('div','','entry-top');top.append(userText(text('strong',row.date||'')),text('span','‹','swipe-cue'));content.append(top);
+    content.append(userText(text('p',row.shiftTime||window.I18n.t('Início e término não registrados'),'shift-clock')),userText(text('p',row.address||'','record-site')),userText(text('p',row.workType||'','muted')),text('p','','line-total'));
+    if(!row.sourceId)content.append(text('p','Item antigo sem jornada vinculada. Remova e selecione uma jornada do Histórico.','notice'));
+    box.append(remove,content);swipeRow(box,content,remove);$('invoiceRows').append(box);if(persist)changed();return box;
   }
+  $('invoiceUndoButton').onclick=()=>{if(!removedRow)return;const {row,index}=removedRow;removedRow=null;$('invoiceUndo').classList.add('hidden');if(row.sourceId&&(state.invoices||[]).some(i=>i.status!=='cancelled'&&(i.sourceIds||[]).includes(row.sourceId)))return;if([...$('invoiceRows').children].some(e=>e.dataset.sourceId&&e.dataset.sourceId===row.sourceId))return;const source=(state.history||[]).find(r=>String(r.id||r.startedAt)===row.sourceId&&!r.deleted);if(row.sourceId&&!source)return;const box=addRow(source?sourceRow(source):row,false);$('invoiceRows').insertBefore(box,$('invoiceRows').children[index]||null);changed();};
   function populate(draft){
+    removedRow=null;$('invoiceUndo').classList.add('hidden');
     $('invoiceNumber').value=draft.number||state.nextInvoiceNumber||18;$('invoiceRate').value=(window.I18n.language()==='pt'?String(draft.rate||'32').replace('.',','):String(draft.rate||'32'));
     for(const key of Object.keys(fields))document.querySelector(`[name="${key}"]`).value=draft.profile&&draft.profile[key]||'';
     $('invoiceRows').replaceChildren();for(const r of draft.rows||[])addRow(r,false);
@@ -94,8 +114,17 @@
       }
     }
   }
-  function sourceRow(s){return {shiftTime:s.entryMode==='times'?[s.startTime,s.endTime+(s.nextDay?' (+1)':'')].join(' – '):s.timesheetEntry?[s.timesheetEntry.start,s.timesheetEntry.end].join(' – '):'',date:s.workDate||today(),...(s.timesheetEntry?{timesheet:s.timesheetEntry}:{}),address:s.worksite||'',hours:(s.workedMs/3600000).toFixed(10).replace(/0+$/,'').replace(/\.$/,''),sourceId:String(s.id||s.startedAt),sourceFingerprint:s.billingFingerprint||'',workType:s.workType||'',overtimePremium:s.totals?.overtimePremium||0,exactHours:s.config?.payRule==='marken',billingNote:s.billingNote||'',sourceRate:String(s.config?.hourly||32),sourceGross:s.totals?.gross,exactHours:true};}
-  function renderPicker(){if(!state)return;const selectedClient=window.Listing.normal(document.querySelector('#invoices [name="client"]').value),query=window.Listing.normal($('invoiceJourneySearch').value),included=new Set([...$('invoiceRows').children].map(e=>e.dataset.sourceId)),claimed=new Set((state.invoices||[]).filter(r=>r.status!=='cancelled').flatMap(r=>r.sourceIds||[]).map(String));const eligible=(state.history||[]).filter(r=>!r.deleted&&r.workedMs>0&&r.config?.currency==='AUD'&&!claimed.has(String(r.id||r.startedAt))&&(!selectedClient||window.Listing.normal(r.client||'')===selectedClient)&&window.Listing.normal([r.client,r.workDate,r.workType,r.worksite].join(' ')).includes(query)).sort((a,b)=>Number(window.Listing.normal(b.client||'')===selectedClient)-Number(window.Listing.normal(a.client||'')===selectedClient)||(b.workDate||'').localeCompare(a.workDate||''));const signature=JSON.stringify([eligible.map(r=>[r.id,r.billingFingerprint,r.workedMs]),[...included],query,selectedClient,pickerLimit,window.I18n.language()]);if(signature===pickerSignature)return;pickerSignature=signature;const list=$('invoiceJourneyList');list.replaceChildren();$('invoiceJourneyMore').classList.toggle('hidden',eligible.length<=pickerLimit);if(!eligible.length)list.append(text('p','Nenhuma jornada disponível para este cliente. Confira o Histórico ou ajuste a busca.','help'));for(const r of eligible.slice(0,pickerLimit)){const row=text('div','','journey-choice'),info=text('div','','');info.dataset.userText='';info.append(text('strong',r.workDate||''),text('small',[r.client,r.worksite].filter(Boolean).join(' · ')));info.append(text('small',[sourceRow(r).shiftTime||(r.workedMs/3600000).toLocaleString(window.I18n.locale(),{maximumFractionDigits:2})+' h',cash(Math.round(Number(r.totals?.gross||0)*100))].join(' · ')));const incomplete=r.config?.payRule==='marken'&&!r.timesheetEntry;const button=text('button',included.has(String(r.id||r.startedAt))?'ADICIONADA':incomplete?'AJUSTAR NO HISTÓRICO':'ADICIONAR','button secondary');button.type='button';button.disabled=included.has(String(r.id||r.startedAt));button.onclick=()=>{if(incomplete){window.App.go('history');}else window.InvoiceUI.addJourney(r);};row.append(info,button);list.append(row);}}
+  function shiftTime(s){
+    if(s.entryMode==='times'&&s.startTime&&s.endTime)return s.startTime+' – '+s.endTime+(s.nextDay?' (+1)':'');
+    if(s.timesheetEntry)return s.timesheetEntry.start+' – '+s.timesheetEntry.end;
+    if(s.entryMode==='hours')return '';
+    const spans=s.workIntervals||[],from=spans.length?spans[0][0]:s.workStartedAt,to=spans.length?spans[spans.length-1][1]:s.endedAt;
+    if(!from||!to||to<from)return '';
+    const fmt=new Intl.DateTimeFormat('en-GB',{hour:'2-digit',minute:'2-digit',hourCycle:'h23',timeZone:s.workZone||'Australia/Adelaide'}),day=new Intl.DateTimeFormat('en-CA',{year:'numeric',month:'2-digit',day:'2-digit',timeZone:s.workZone||'Australia/Adelaide'});
+    return fmt.format(from)+' – '+fmt.format(to)+(day.format(from)!==day.format(to)?' (+1)':'');
+  }
+  function sourceRow(s){return {shiftTime:shiftTime(s),date:s.workDate||today(),...(s.timesheetEntry?{timesheet:s.timesheetEntry}:{}),address:s.worksite||'',hours:(s.workedMs/3600000).toFixed(10).replace(/0+$/,'').replace(/\.$/,''),sourceId:String(s.id||s.startedAt),sourceFingerprint:s.billingFingerprint||'',workType:s.workType||'',overtimePremium:s.totals?.overtimePremium||0,exactHours:s.config?.payRule==='marken',billingNote:s.billingNote||'',sourceRate:String(s.config?.hourly||32),sourceGross:s.totals?.gross,exactHours:true};}
+  function renderPicker(){if(!state)return;const selectedClient=window.Listing.normal(document.querySelector('#invoices [name="client"]').value),query=window.Listing.normal($('invoiceJourneySearch').value),included=new Set([...$('invoiceRows').children].map(e=>e.dataset.sourceId)),claimed=new Set((state.invoices||[]).filter(r=>r.status!=='cancelled').flatMap(r=>r.sourceIds||[]).map(String));const eligible=(state.history||[]).filter(r=>!r.deleted&&r.workedMs>0&&r.config?.currency==='AUD'&&!claimed.has(String(r.id||r.startedAt))&&(!selectedClient||window.Listing.normal(r.client||'')===selectedClient)&&window.Listing.normal([r.client,r.workDate,r.workType,r.worksite].join(' ')).includes(query)).sort((a,b)=>Number(window.Listing.normal(b.client||'')===selectedClient)-Number(window.Listing.normal(a.client||'')===selectedClient)||(b.workDate||'').localeCompare(a.workDate||''));const signature=JSON.stringify([eligible.map(r=>[r.id,r.billingFingerprint,r.workedMs]),[...included],query,selectedClient,pickerLimit,window.I18n.language()]);if(signature===pickerSignature)return;pickerSignature=signature;const list=$('invoiceJourneyList');list.replaceChildren();$('invoiceJourneyMore').classList.toggle('hidden',eligible.length<=pickerLimit);if(!eligible.length)list.append(text('p','Nenhuma jornada disponível para este cliente. Confira o Histórico ou ajuste a busca.','help'));for(const r of eligible.slice(0,pickerLimit)){const row=text('div','','journey-choice'),info=text('div','','');info.dataset.userText='';info.append(text('strong',r.workDate||''),text('small',[r.client,r.worksite].filter(Boolean).join(' · ')));info.append(text('small',[shiftTime(r)||window.I18n.t('Início e término não registrados'),cash(Math.round(Number(r.totals?.gross||0)*100))].join(' · ')));const incomplete=r.config?.payRule==='marken'&&!r.timesheetEntry;const button=text('button',included.has(String(r.id||r.startedAt))?'ADICIONADA':incomplete?'AJUSTAR NO HISTÓRICO':'ADICIONAR','button secondary');button.type='button';button.disabled=included.has(String(r.id||r.startedAt));button.onclick=()=>{if(incomplete){window.App.go('history');}else window.InvoiceUI.addJourney(r);};row.append(info,button);list.append(row);}}
   function syncJourneys(){
     if(!initialized||!state)return;
     let changedRows=false;
@@ -116,7 +145,7 @@
   window.invoiceDraftSaved=revision=>{if(revision===saveRevision){editing=false;$('invoiceSaveState').textContent='RASCUNHO SALVO';}};
   window.InvoiceUI={journeySaved,journeyCancelled(){},
     selectClient(profile){const current=readDraft();if(current.rows.length&&window.Listing.normal(current.profile.client)!==window.Listing.normal(profile.client)){error('Remova as jornadas selecionadas antes de trocar o cliente.');return;}error('');if(profile.hourly>0)$('invoiceRate').value=profile.hourly;for(const key of ['client','client_address','client_abn','client_email'])document.querySelector('#invoices [name="'+key+'"]').value=profile[key]||'';changed();},
-    render(s){state=s;window.Listing.options($('invoices-client'),(s.invoices||[]).map(r=>r.client));window.Listing.options($('invoices-type'),(s.invoices||[]).flatMap(r=>window.Listing.invoiceTypes(r,s)));if(!initialized)populate(s.invoiceDraft||{profile:window.invoiceDefaults.profile,number:s.nextInvoiceNumber||window.invoiceDefaults.nextNumber,rate:window.invoiceDefaults.profile.rate,rows:[]});syncJourneys();$('invoiceDate').textContent=today();records();renderPicker();},
+    render(s){state=s;window.Listing.options($('invoices-client'),(s.invoices||[]).map(r=>r.client));window.Listing.options($('invoices-type'),(s.invoices||[]).flatMap(r=>window.Listing.invoiceTypes(r,s)));if(!initialized)populate(s.invoiceDraft||{profile:window.invoiceDefaults.profile,number:s.nextInvoiceNumber||window.invoiceDefaults.nextNumber,rate:window.invoiceDefaults.profile.rate,rows:[]});syncJourneys();records();renderPicker();},
     addJourney(s){
       const d=readDraft(),id=String(s.id||s.startedAt);
       if(s.config&&s.config.currency!=='AUD'){error('O invoice usa AUD. Corrija a moeda da jornada no Histórico antes de adicioná-la.');return false;}
