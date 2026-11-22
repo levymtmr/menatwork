@@ -1,0 +1,2 @@
+package android.net;
+public final class Uri{private String value;private Uri(String s){value=s;}public String toString(){return value;}public static final class Builder{String scheme,authority,path;public Builder scheme(String s){scheme=s;return this;}public Builder authority(String s){authority=s;return this;}public Builder appendPath(String s){path=s;return this;}public Uri build(){return new Uri(scheme+"://"+authority+"/"+path);}}}

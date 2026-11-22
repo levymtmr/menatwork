@@ -63,7 +63,7 @@ final class InvoiceStore {
     static Map<String, String> profile(JSONObject draft) throws Exception {
         JSONObject p = draft.getJSONObject("profile");
         Map<String, String> out = new HashMap<>();
-        for (String key : new String[]{"name", "address", "email", "abn", "bank", "bsb", "account", "account_name", "client", "client_abn", "client_address", "client_email", "description"}) {
+        for (String key : new String[]{"name", "address", "email", "abn", "bank", "bsb", "account", "account_name", "client", "client_abn", "client_address", "client_email", "description", "timesheet_position", "timesheet_company", "timesheet_location"}) {
             String value = p.optString(key).trim();
             int limit = key.contains("address") ? 350 : key.equals("description") ? 500 :
                 key.contains("email") ? 160 : key.contains("abn") || key.equals("bsb") ? 40 : key.equals("account") ? 80 : 120;
@@ -94,6 +94,7 @@ final class InvoiceStore {
             items.add(new InvoiceEngine.Item(r.getString("date"), address, hours, r.optString("sourceRate",rate), source,r.optString("overtimePremium","0"),r.optBoolean("exactHours"),r.optString("billingNote")));
         }
         InvoiceEngine.total(items);
+        if(paired(draft)){List<MarkenBilling.Entry> entries=sheetEntries(draft);java.math.BigDecimal target=MarkenBilling.total(entries),difference=target.subtract(InvoiceEngine.total(items));int last=items.size()-1;items.set(last,InvoiceEngine.withAmount(items.get(last),items.get(last).amount.add(difference)));}
         return items;
     }
     void available(int number, List<InvoiceEngine.Item> items) throws Exception {
@@ -117,10 +118,16 @@ final class InvoiceStore {
             if(source==null||source.optBoolean("deleted"))throw new IllegalArgumentException("Uma jornada foi removida. Atualize os vínculos do rascunho antes de emitir.");
         }
     }
+    static boolean paired(JSONObject draft){JSONArray rows=draft.optJSONArray("rows");if(rows!=null)for(int n=0;n<rows.length();n++)if(rows.optJSONObject(n)!=null&&rows.optJSONObject(n).has("timesheet"))return true;return ClientRegistry.namedMarken(draft.optJSONObject("profile")==null?"":draft.optJSONObject("profile").optString("client"));}
+    static List<MarkenBilling.Entry> sheetEntries(JSONObject draft)throws Exception{List<MarkenBilling.Entry> out=new ArrayList<>();JSONArray rows=draft.getJSONArray("rows");for(int n=0;n<rows.length();n++){JSONObject r=rows.getJSONObject(n);if(r.optString("sourceId").isEmpty()||!r.has("timesheet"))throw new IllegalArgumentException("Para Marken, vincule jornadas com início e término para gerar os dois PDFs.");out.add(TimesheetData.read(r.getJSONObject("timesheet")));}if(out.isEmpty())throw new IllegalArgumentException("Vincule jornadas Marken para gerar o timesheet.");return out;}
+    File previewTimesheet(JSONObject draft)throws Exception{validateDraftSources(draft);byte[] bytes=InvoicePdf.generateTimesheet(draft.getInt("number"),today(),profile(draft),sheetEntries(draft));File out=File.createTempFile("preview_",".pdf",folder());try(FileOutputStream stream=new FileOutputStream(out)){stream.write(bytes);}return out;}
+    File timesheet(JSONObject record,boolean signed)throws Exception{String field=signed&&!record.optString("signedTimesheetFilename").isEmpty()?"signedTimesheetFilename":"timesheetFilename";String name=record.optString(field);if(!name.matches("timesheet_(?:signed_)?[0-9]+_[0-9]{4}-[0-9]{2}-[0-9]{2}(?:_[0-9a-f-]+)?\\.pdf"))throw new IllegalArgumentException("Timesheet não encontrado.");File out=new File(folder(),name);if(!out.isFile())throw new IllegalArgumentException("Timesheet não encontrado.");return out;}
+    void attachSigned(String invoice,InputStream input)throws Exception{JSONObject current=find(invoice);if(!active(current)||needsReview(current)||!current.has("timesheetFilename"))throw new IllegalArgumentException("Revise o invoice antes de anexar o timesheet.");String name="timesheet_signed_"+InvoiceEngine.number(current.getInt("number"))+"_"+current.getString("issued")+"_"+UUID.randomUUID()+".pdf";File target=new File(folder(),name);boolean committed=false;try{try(FileOutputStream out=new FileOutputStream(target)){byte[] head=new byte[5];int count=0;while(count<5){int n=input.read(head,count,5-count);if(n<0)break;count+=n;}if(count!=5||!new String(head,StandardCharsets.US_ASCII).equals("%PDF-"))throw new IllegalArgumentException("Selecione um timesheet em PDF.");out.write(head);long size=5;byte[] buffer=new byte[8192];int n;while((n=input.read(buffer))!=-1){size+=n;if(size>20*1024*1024)throw new IllegalArgumentException("O timesheet deve ter até 20 MB.");out.write(buffer,0,n);}out.getFD().sync();}JSONArray all=records();for(int n=0;n<all.length();n++)if(all.getJSONObject(n).getString("filename").equals(invoice))all.getJSONObject(n).put("signedTimesheetFilename",name);if(!prefs.edit().putString("records",all.toString()).commit())throw new IOException("Não foi possível salvar o timesheet.");committed=true;}finally{if(!committed)target.delete();}}
     File preview(JSONObject draft) throws Exception {
         Map<String, String> profile = profile(draft);
         List<InvoiceEngine.Item> items = items(draft);
-        byte[] bytes = InvoicePdf.generate(draft.getInt("number"), today(), profile, items);
+        if(paired(draft))validateDraftSources(draft);
+        byte[] bytes = InvoicePdf.generate(draft.getInt("number"), today(), profile, items,paired(draft));
         File folder = folder();
         // Only retain a bounded number of temporary previews; issued files are immutable.
         File[] old = folder.listFiles((dir, name) -> name.startsWith("preview_"));
@@ -142,16 +149,19 @@ final class InvoiceStore {
         String date = issued.toString();
         File out = new File(folder(), "invoice_" + InvoiceEngine.number(number) + "_" + date + ".pdf");
         if (out.exists()) throw new IllegalArgumentException("O PDF já existe. Escolha outro número.");
-        byte[] bytes = InvoicePdf.generate(number, issued, profile, items);
+        boolean pair=paired(draft);byte[] bytes = InvoicePdf.generate(number, issued, profile, items,pair);
+        File sheet=pair?new File(folder(),"timesheet_"+InvoiceEngine.number(number)+"_"+date+".pdf"):null;byte[] sheetBytes=pair?InvoicePdf.generateTimesheet(number,issued,profile,sheetEntries(draft)):null;
         File temp = File.createTempFile("invoice-write-", ".tmp", folder());
+        boolean committed=false,sheetCreated=false,invoiceCreated=false;
         try {
+            if(sheet!=null){if(!sheet.createNewFile())throw new IOException("O timesheet já existe. Escolha outro número.");sheetCreated=true;try(FileOutputStream stream=new FileOutputStream(sheet)){stream.write(sheetBytes);stream.getFD().sync();}}
             try (FileOutputStream stream = new FileOutputStream(temp)) { stream.write(bytes); stream.getFD().sync(); }
-            if (!temp.renameTo(out)) throw new IOException("Não foi possível guardar o PDF.");
+            if (!temp.renameTo(out)) throw new IOException("Não foi possível guardar o PDF.");invoiceCreated=true;
             JSONObject record = new JSONObject();
             Store.put(record, "number", number); Store.put(record, "issued", date);
             Store.put(record, "client", profile.get("client")); Store.put(record, "email", profile.get("client_email"));
             Store.put(record, "total", InvoiceEngine.total(items).toPlainString());
-            Store.put(record, "filename", out.getName()); Store.put(record, "draft", draft);
+            Store.put(record, "filename", out.getName()); Store.put(record, "draft", draft);if(sheet!=null){Store.put(record,"timesheetFilename",sheet.getName());Store.put(record,"servicePeriod",MarkenBilling.period(sheetEntries(draft)));}
             Store.put(record, "status", "issued");
             JSONArray sources = new JSONArray();
             JSONObject fingerprints=new JSONObject();Store journals=new Store(context);
@@ -166,7 +176,8 @@ final class InvoiceStore {
             if (!prefs.edit().putString("records", all.toString()).putString("draft", nextDraft.toString()).commit()) {
                 out.delete(); throw new IOException("Não foi possível salvar o registro do invoice.");
             }
-        } finally { temp.delete(); }
+            committed=true;
+        } finally { temp.delete();if(!committed){if(invoiceCreated)out.delete();if(sheetCreated)sheet.delete();} }
         return out;
     }
     void validateDraftSources(JSONObject draft) throws Exception {
@@ -175,6 +186,7 @@ final class InvoiceStore {
             JSONObject row=rows.getJSONObject(n);String id=row.optString("sourceId");if(id.isEmpty())continue;
             JSONObject source=journals.findJournal(id);
             if(source==null||source.optBoolean("deleted"))throw new IllegalArgumentException("Uma jornada foi removida. Toque em Atualizar jornadas vinculadas.");
+            if(Store.isMarken(source)){if(!row.has("timesheet")||!TimesheetData.read(row.getJSONObject("timesheet")).signature().equals(TimesheetData.read(TimesheetData.fromSource(source)).signature()))throw new IllegalArgumentException("Atualize as jornadas vinculadas para gerar o timesheet correto.");}
             if(Store.isMarken(source)&&!row.optBoolean("exactHours"))throw new IllegalArgumentException("Atualize a jornada Marken vinculada antes de emitir.");
             JSONObject totals=source.optJSONObject("totals");double premium=totals==null?0:totals.optDouble("overtimePremium",0);
             if(source.optJSONObject("config").optBoolean("overtime")&&(Math.abs(row.optDouble("overtimePremium",0)-premium)>0.00001||Math.abs(row.optDouble("sourceRate",0)-source.getJSONObject("config").getDouble("hourly"))>0.00001||Math.abs(InvoiceEngine.hours(row.optString("hours")).doubleValue()-source.optLong("workedMs")/3600000.0)>0.000001))throw new IllegalArgumentException("Atualize a jornada vinculada para incluir o overtime correto.");
@@ -204,6 +216,7 @@ final class InvoiceStore {
             JSONObject row=new JSONObject(rows.getJSONObject(n).toString());String id=row.optString("sourceId");
             if(!id.isEmpty()){
                 JSONObject source=journals.findJournal(id);if(source==null||source.optBoolean("deleted"))continue;
+                if(Store.isMarken(source))row.put("timesheet",TimesheetData.fromSource(source));else row.remove("timesheet");
                 row.put("exactHours",Store.isMarken(source));row.put("billingNote",source.optString("billingNote"));
                 row.put("overtimePremium",source.optJSONObject("totals").optDouble("overtimePremium",0));if(source.optJSONObject("config").optBoolean("overtime"))row.put("sourceRate",source.getJSONObject("config").getDouble("hourly"));else row.remove("sourceRate");
                 row.put("date",Store.date(source));row.put("hours",java.math.BigDecimal.valueOf(source.optLong("workedMs")).divide(new java.math.BigDecimal("3600000"),12,java.math.RoundingMode.HALF_UP).stripTrailingZeros().toPlainString());

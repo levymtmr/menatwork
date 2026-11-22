@@ -28,6 +28,7 @@ jobs:
           curl -fsSL https://repo.maven.apache.org/maven2/org/json/json/20240303/json-20240303.jar -o "$RUNNER_TEMP/json.jar"
           echo "3cf6cd6892e32e2b4c1c39e0f52f5248a2f5b37646fdfbb79a66b46b618414ed  $RUNNER_TEMP/json.jar" | sha256sum -c -
           JSON_TEST_JAR="$RUNNER_TEMP/json.jar" scripts/test-marken-store.sh
+          JSON_TEST_JAR="$RUNNER_TEMP/json.jar" scripts/test-paired-invoices.sh
       - name: Test app interface and Marken invoice
         env:
           PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/menatwork-browsers

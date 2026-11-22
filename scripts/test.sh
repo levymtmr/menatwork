@@ -5,7 +5,7 @@ cd "$(dirname "$0")/.."
 mkdir -p build/tests
 "$JAVA_HOME/bin/javac" -encoding UTF-8 -d build/tests app/src/main/java/com/neonshift/app/CostEngine.java app/src/main/java/com/neonshift/app/TimeLedger.java tests/CostEngineTest.java
 "$JAVA_HOME/bin/java" -cp build/tests CostEngineTest
-"$JAVA_HOME/bin/javac" -encoding UTF-8 -d build/tests app/src/main/java/com/neonshift/app/InvoiceEngine.java app/src/main/java/com/neonshift/app/InvoiceFont.java app/src/main/java/com/neonshift/app/InvoicePdf.java tests/InvoiceTest.java
+"$JAVA_HOME/bin/javac" -encoding UTF-8 -d build/tests app/src/main/java/com/neonshift/app/InvoiceEngine.java app/src/main/java/com/neonshift/app/InvoiceFont.java app/src/main/java/com/neonshift/app/InvoicePdf.java app/src/main/java/com/neonshift/app/MarkenBilling.java tests/InvoiceTest.java
 python3 - <<'PY'
 from pathlib import Path
 import json
@@ -28,3 +28,5 @@ PY
 "${NODE_BIN:-node}" tests/weekly.cjs
 "$JAVA_HOME/bin/javac" -encoding UTF-8 -d build/tests app/src/main/java/com/neonshift/app/MarkenEngine.java tests/MarkenTest.java
 "$JAVA_HOME/bin/java" -cp build/tests MarkenTest
+"$JAVA_HOME/bin/javac" -encoding UTF-8 -cp build/tests -d build/tests app/src/main/java/com/neonshift/app/MarkenBilling.java tests/MarkenBillingTest.java
+"$JAVA_HOME/bin/java" -cp build/tests MarkenBillingTest

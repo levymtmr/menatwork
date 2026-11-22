@@ -14,7 +14,7 @@ public class InvoiceProvider extends ContentProvider {
         if (!"com.neonshift.app.invoices".equals(uri.getAuthority()) || uri.getPathSegments().size() != 1)
             throw new FileNotFoundException();
         String name = uri.getLastPathSegment();
-        if (name == null || !name.matches("(?:invoice_[0-9]+_[0-9]{4}-[0-9]{2}-[0-9]{2}|preview_[0-9a-f-]+)\\.pdf"))
+        if (name == null || !name.matches("(?:(?:invoice|timesheet)_[0-9]+_[0-9]{4}-[0-9]{2}-[0-9]{2}|timesheet_signed_[0-9]+_[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9a-f-]+|preview_[0-9a-f-]+)\\.pdf"))
             throw new FileNotFoundException();
         File f = new File(new File(getContext().getFilesDir(), "invoice-pdfs"), name);
         if (!f.isFile()) throw new FileNotFoundException();

@@ -2,7 +2,7 @@
 
 Se já usa a versão anterior, instale o novo APK por cima dela e escolha **Atualizar**. Não desinstale: assim seus registros e ajustes são preservados.
 
-1. Copie `neon-shift-1.9.1.apk` para o celular, por cabo USB ou outro meio de sua preferência.
+1. Copie `neon-shift-1.10.0.apk` para o celular, por cabo USB ou outro meio de sua preferência.
 2. Abra o APK pelo aplicativo **Meus Arquivos**. Se o Android pedir, permita instalar aplicativos dessa fonte e volte para concluir a instalação.
 3. Abra **Menatwork** e entre em **Ajustes**. Configure sua moeda, hora de trabalho, imposto estimado, consumo do carro, preço da gasolina e custos por km. Os valores iniciais são exemplos.
 4. Ao sair para trabalhar, toque em **Iniciar trajeto ao trabalho**. Permita localização precisa e notificações quando solicitado. O GPS funciona melhor ao ar livre.
@@ -86,3 +86,5 @@ Abra **Ajustes → Clientes → Novo cliente** (Settings → Clients → New cli
 Para clientes com adicional, ative **Overtime** no cadastro. Escolha o cliente antes de iniciar o trajeto. Ao finalizar, informe se houve almoço, os minutos e o horário de início; não é necessário pausar para o almoço. O painel **Esta semana** soma todos os dias trabalhados, incluindo a jornada em andamento.
 
 Para Marken, escolha **Regra de pagamento → Marken / SA Recruitment** no cadastro do cliente. O almoço de 30 minutos é descontado automaticamente apenas em turnos acima de 4 horas; não é necessário informar 45 minutos nem pausar o almoço.
+
+No invoice, escolha o cliente, use Selecionar jornadas ou Criar jornada e revise o bruto. Para Marken, confira as prévias de invoice e timesheet antes de emitir. Depois, salve o timesheet para obter a assinatura e use Anexar timesheet assinado. Enviar ao cliente abre os dois anexos separados no aplicativo escolhido, onde você revisa e envia.

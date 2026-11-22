@@ -9,7 +9,8 @@ import java.util.*;
 
 /** Small, offline PDF writer. Standard Helvetica fonts and Invoice Deck geometry. */
 public final class InvoicePdf {
-    private static final float MM = 72f / 25.4f, W = 210 * MM, H = 297 * MM, M = 18 * MM;
+    private static final float MM = 72f / 25.4f, M = 18 * MM;
+    private final float W,H;private final boolean timesheet;private boolean summaryInvoice;
     private static final Charset CP1252 = Charset.forName("windows-1252");
     private final List<StringBuilder> pages = new ArrayList<>();
     private StringBuilder page;
@@ -18,6 +19,10 @@ public final class InvoicePdf {
     private float y;
 
     private InvoicePdf(int number, Map<String, String> profile) {
+        this(number,profile,false);
+    }
+    private InvoicePdf(int number,Map<String,String> profile,boolean timesheet){
+        this.timesheet=timesheet;W=(timesheet?297:210)*MM;H=(timesheet?210:297)*MM;
         this.number = InvoiceEngine.number(number);
         this.profile = profile;
     }
@@ -96,18 +101,18 @@ public final class InvoicePdf {
         float headerBottom = y + Math.max(a, b) + 45 + 13 + wrap(get("description"), W - 2 * M - 12, 9, false).size() * 12 + 16 + 24;
         if (headerBottom > H - M - 10) throw new IllegalArgumentException("Reduza os textos do prestador, cliente ou descrição para caber no cabeçalho do PDF.");
         y += Math.max(a, b) + 45;
-        text("WORK DETAILS", M + 6, y, 14, true, "0 0 0"); y += 13;
+        text("SHIFT DETAILS", M + 6, y, 14, true, "0 0 0"); y += 13;
         y += paragraph(get("description"), M + 6, y, W - 2 * M - 12) + 16;
     }
     private void tableHead() {
         rect(M, y, W - 2 * M, 24, "0.91 0.94 0.94");
-        text("Date / day", M + 6, y + 15, 9, false, "0.20 0.25 0.33");
-        text("Work location", M + 32 * MM + 6, y + 15, 9, false, "0.20 0.25 0.33");
+        text(summaryInvoice?"Service period":"Date / day", M + 6, y + 15, 9, false, "0.20 0.25 0.33");
+        text(summaryInvoice?"Description":"Work location", M + 32 * MM + 6, y + 15, 9, false, "0.20 0.25 0.33");
         right("Amount AUD", W - M - 6, y + 15, 9, false, "0.20 0.25 0.33");
         y += 24; line(M, W - M, y);
     }
     private void row(InvoiceEngine.Item i, int index) {
-        List<String> address = wrap(i.dayOff ? "Day off" : i.address+(i.note.isEmpty()?"":" - "+i.note)+(i.premium.signum()>0?" — Overtime premium AUD "+i.premium.setScale(2,java.math.RoundingMode.HALF_UP).toPlainString():""), 110 * MM - 12, 9, false);
+        List<String> address = wrap(i.dayOff ? "Day off" : i.address, 110 * MM - 12, 9, false);
         float height = Math.max(2, address.size()) * 12 + 12;
         if (y + height > H - M - 10) { newPage(); tableHead(); }
         if ((index & 1) == 1) rect(M, y, W - 2 * M, height, "0.973 0.980 0.984");
@@ -130,7 +135,7 @@ public final class InvoicePdf {
     private byte[] finish() throws Exception {
         for (int n = 0; n < pages.size(); n++) {
             page = pages.get(n);
-            String footer = "Invoice " + number + " | " + get("name");
+            String footer = (timesheet?"Timesheet for invoice ":"Invoice ") + number + " | " + get("name");
             if (width(footer, 8, false) > W - 2 * M - 65) {
                 while (width(footer + "...", 8, false) > W - 2 * M - 65) footer = footer.substring(0, footer.length() - 1);
                 footer += "...";
@@ -163,11 +168,37 @@ public final class InvoicePdf {
         out.write(("trailer\n<< /Size " + offsets.size() + " /Root 1 0 R >>\nstartxref\n" + xref + "\n%%EOF\n").getBytes(StandardCharsets.US_ASCII));
         return out.toByteArray();
     }
+    private void summaryRow(List<InvoiceEngine.Item> items){
+        LocalDate from=items.get(0).date,to=from;for(InvoiceEngine.Item item:items){if(item.date.isBefore(from))from=item.date;if(item.date.isAfter(to))to=item.date;}
+        List<String> lines=wrap("Services provided - "+get("client"),110*MM-12,9,false);float height=Math.max(3,lines.size())*12+12;
+        if(y+height>H-M-10){newPage();tableHead();}text(from.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),M+6,y+15,9,false,"0.20 0.25 0.33");if(!from.equals(to))text("to "+to.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),M+6,y+27,8,false,"0.20 0.25 0.33");
+        for(int n=0;n<lines.size();n++)text(lines.get(n),M+32*MM+6,y+15+12*n,9,false,"0.20 0.25 0.33");right(String.format(Locale.US,"%,.2f",InvoiceEngine.total(items)),W-M-6,y+15,9,false,"0.20 0.25 0.33");y+=height;line(M,W-M,y);
+    }
+    private void sheetHead(){
+        text("TIMESHEET",M,y,20,true,"0.08 0.20 0.30");right("Invoice #"+number,W-M,y,11,true,"0.08 0.20 0.30");y+=22;
+    }
+    private void sheetTableHead(){String[] names={"Date","Start","Finish","Unpaid break","Ordinary","OT1.5","OT2","Base AUD/h"};float[] x={0,92,170,248,340,440,540,638};rect(M,y,W-2*M,24,"0.10 0.26 0.38");for(int n=0;n<names.length;n++)text(names[n],M+x[n]+5,y+15,9,true,"1 1 1");y+=24;}
+    public static byte[] generateTimesheet(int number,LocalDate submitted,Map<String,String> profile,List<MarkenBilling.Entry> entries)throws Exception{
+        if(entries.isEmpty())throw new IllegalArgumentException("Vincule jornadas Marken para gerar o timesheet.");InvoicePdf p=new InvoicePdf(number,profile,true);p.newPage();p.sheetHead();
+        String position=profile.getOrDefault("timesheet_position","");if(position.isEmpty())position=entries.get(0).position;String company=profile.getOrDefault("timesheet_company","");if(company.isEmpty())company=entries.get(0).company;String site=profile.getOrDefault("timesheet_location","");if(site.isEmpty())site=entries.get(0).site;
+        p.y+=p.paragraph("Worker: "+profile.getOrDefault("name","")+" | Position: "+position+"\nCompany: "+company+" | Location: "+site+"\nDate range: "+MarkenBilling.period(entries)+" | Submitted: "+submitted,M,p.y,Wsheet(p)-2*M)+12;p.sheetTableHead();
+        List<MarkenBilling.Entry> ordered=new ArrayList<>(entries);ordered.sort(Comparator.comparing((MarkenBilling.Entry e)->e.date).thenComparing(e->e.start));long[] totals=new long[4];float[] x={0,92,170,248,340,440,540,638};
+        for(MarkenBilling.Entry e:ordered){List<String> details=wrap("Site: "+e.site+(e.position.isEmpty()?"":" | Position: "+e.position),p.W-2*M-10,8,false);float height=27+details.size()*11;if(p.y+height>p.H-M-12){p.newPage();p.sheetHead();p.sheetTableHead();}
+            String[] values={e.date,e.start,e.end,MarkenBilling.duration(e.breakMs),MarkenBilling.duration(e.regularMs),MarkenBilling.duration(e.ot15Ms),MarkenBilling.duration(e.ot2Ms),e.rate.setScale(2,java.math.RoundingMode.HALF_UP).toPlainString()};for(int n=0;n<values.length;n++)p.text(values[n],M+x[n]+5,p.y+14,8,false,"0.12 0.18 0.24");for(int n=0;n<details.size();n++)p.text(details.get(n),M+5,p.y+27+n*11,8,false,"0.35 0.40 0.45");p.y+=height;p.line(M,p.W-M,p.y);totals[0]+=e.breakMs;totals[1]+=e.regularMs;totals[2]+=e.ot15Ms;totals[3]+=e.ot2Ms;
+        }
+        if(p.y+150>p.H-M){p.newPage();p.sheetHead();}p.y+=17;p.text("TOTAL",M+5,p.y,10,true,"0.10 0.26 0.38");for(int n=0;n<4;n++)p.text(MarkenBilling.duration(totals[n]),M+x[n+3]+5,p.y,9,true,"0.10 0.26 0.38");p.y+=20;
+        for(MarkenBilling.Group g:MarkenBilling.groups(entries)){String rates="Rates AUD: ordinary "+g.rate.setScale(2,java.math.RoundingMode.HALF_UP)+" | OT1.5 "+g.rate.multiply(new java.math.BigDecimal("1.5")).setScale(2,java.math.RoundingMode.HALF_UP)+" | OT2 "+g.rate.multiply(new java.math.BigDecimal("2")).setScale(2,java.math.RoundingMode.HALF_UP);if(p.y+85>p.H-M){p.newPage();p.sheetHead();}p.y+=p.paragraph(rates+"\nAmounts AUD: ordinary "+g.amount(0)+" | OT1.5 "+g.amount(1)+" | OT2 "+g.amount(2),M+5,p.y,p.W-2*M-10)+12;}
+        if(p.y+83>p.H-M){p.newPage();p.sheetHead();}p.text("TOTAL INVOICE AUD $"+MarkenBilling.total(entries),M+5,p.y,14,true,"0.05 0.30 0.18");p.y+=24;p.text("Site manager name: ____________________  Signature: ____________________  Date: __________",M+5,p.y,9,false,"0.12 0.18 0.24");p.y+=17;p.text("Keep a signed copy. Hours and payment remain subject to site manager approval.",M+5,p.y,8,false,"0.35 0.40 0.45");return p.finish();
+    }
+    private static float Wsheet(InvoicePdf p){return p.W;}
     public static byte[] generate(int number, LocalDate issued, Map<String, String> profile, List<InvoiceEngine.Item> items) throws Exception {
+        return generate(number,issued,profile,items,false);
+    }
+    public static byte[] generate(int number,LocalDate issued,Map<String,String> profile,List<InvoiceEngine.Item> items,boolean summary)throws Exception{
         InvoiceEngine.total(items);
         InvoicePdf pdf = new InvoicePdf(number, profile);
-        pdf.newPage(); pdf.header(issued); pdf.tableHead();
-        for (int n = 0; n < items.size(); n++) pdf.row(items.get(n), n);
+        pdf.summaryInvoice=summary;pdf.newPage(); pdf.header(issued); pdf.tableHead();
+        if(summary)pdf.summaryRow(items);else for (int n = 0; n < items.size(); n++) pdf.row(items.get(n), n);
         pdf.payment(items);
         return pdf.finish();
     }

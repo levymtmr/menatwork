@@ -16,6 +16,7 @@ import org.json.*;
 import java.io.OutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -27,7 +28,7 @@ public class MainActivity extends Activity {
     private InvoiceStore invoices;
     private ClientRegistry clients;
     private AppUpdater updater;
-    private String pendingPdf;
+    private String pendingPdf;private String pendingSignedInvoice;
     private String pendingAction;
     @SuppressWarnings("deprecation")
     public void onCreate(Bundle b) {
@@ -36,7 +37,7 @@ public class MainActivity extends Activity {
         invoices = new InvoiceStore(this);
         clients = new ClientRegistry(this,store,invoices);
         updater = AppUpdater.get(this);
-        if (b != null) pendingPdf = b.getString("pendingPdf");
+        if (b != null){pendingPdf=b.getString("pendingPdf");pendingSignedInvoice=b.getString("pendingSignedInvoice");}
         getWindow().setStatusBarColor(Color.rgb(8, 18, 10));
         getWindow().setNavigationBarColor(Color.rgb(8, 18, 10));
         web = new WebView(this);
@@ -159,7 +160,7 @@ public class MainActivity extends Activity {
             Store.put(j, "session", s);Store.put(j,"trackedWorkedMs",Store.elapsed(s));
             Store.put(j, "config", store.config());
             Store.put(j, "totals", Store.totals(s, store.config()));
-            Store.put(j, "history", store.annotatedHistory());
+            JSONArray history=store.annotatedHistory();for(int n=0;n<history.length();n++){JSONObject row=history.optJSONObject(n);if(row!=null&&Store.isMarken(row))try{Store.put(row,"timesheetEntry",TimesheetData.fromSource(row));}catch(Exception e){Store.put(row,"timesheetError",e.getMessage());}}Store.put(j,"history",history);
             Store.put(j, "serviceRunning", ShiftService.running);
             Store.put(j, "now", System.currentTimeMillis());
             Store.put(j, "invoiceDraft", invoices.draft());
@@ -217,7 +218,7 @@ public class MainActivity extends Activity {
                     } else if ("installUpdate".equals(action)) {
                         installUpdate();
                     } else if ("saveInvoiceDraft".equals(action)) {
-                        invoices.saveDraft(p);
+                        invoices.saveDraft(p);web.evaluateJavascript("window.invoiceDraftSaved && window.invoiceDraftSaved("+p.optLong("_saveRevision")+")",null);
                     } else if ("newInvoiceDraft".equals(action)) {
                         new AlertDialog.Builder(MainActivity.this).setTitle(tr("Novo invoice?"))
                             .setMessage(tr("Limpar os lançamentos do rascunho? Os PDFs emitidos e os dados do prestador e cliente serão mantidos."))
@@ -232,6 +233,7 @@ public class MainActivity extends Activity {
                     } else if ("previewInvoice".equals(action)) {
                         invoices.saveDraft(p);
                         viewPdf(invoices.preview(p));
+                    } else if ("previewTimesheet".equals(action)) {invoices.saveDraft(p);viewPdf(invoices.previewTimesheet(p));
                     } else if ("issueInvoice".equals(action)) {
                         invoices.saveDraft(p);
                         java.util.List<InvoiceEngine.Item> rows = InvoiceStore.items(p);
@@ -247,7 +249,7 @@ public class MainActivity extends Activity {
                                 try {
                                     invoices.issue(p);rememberClient(p.getJSONObject("profile"));
                                     web.evaluateJavascript("window.invoiceIssued && window.invoiceIssued()", null);
-                                    message("Invoice emitido. Use Enviar para abrir o e-mail com o PDF anexado.");
+                                    message(InvoiceStore.paired(p)?"Invoice e timesheet emitidos em dois PDFs separados.":"Invoice emitido. Use Enviar para abrir o e-mail com o PDF anexado.");
                                 } catch (Exception e) { invoiceError(e); }
                             }).setNegativeButton(tr("Voltar"), null).show();
                     } else if ("viewInvoice".equals(action)) {
@@ -255,9 +257,11 @@ public class MainActivity extends Activity {
                         viewPdf(new File(invoices.folder(), p.getString("filename")));
                     } else if ("shareInvoice".equals(action)) {
                         shareInvoice(invoices.find(p.getString("filename")));
-                    } else if ("saveInvoicePdf".equals(action)) {
+                    } else if ("viewTimesheet".equals(action)) {viewPdf(invoices.timesheet(invoices.find(p.getString("filename")),true));
+                    } else if ("attachSignedTimesheet".equals(action)) {pickSignedTimesheet(invoices.find(p.getString("filename")));
+                    } else if ("saveInvoicePdf".equals(action)||"saveTimesheetPdf".equals(action)) {
                         JSONObject record = invoices.find(p.getString("filename"));
-                        pendingPdf = record.getString("filename");
+                        pendingPdf = "saveTimesheetPdf".equals(action)?invoices.timesheet(record,true).getName():record.getString("filename");
                         Intent i = new Intent(Intent.ACTION_CREATE_DOCUMENT).setType("application/pdf").addCategory(Intent.CATEGORY_OPENABLE);
                         i.putExtra(Intent.EXTRA_TITLE, pendingPdf);
                         startActivityForResult(i, 21);
@@ -368,7 +372,15 @@ public class MainActivity extends Activity {
         if(!InvoiceStore.active(record))throw new IllegalArgumentException("Esse invoice foi removido dos totais. Restaure ou gere uma correção antes de enviar.");
         if(invoices.needsReview(record))throw new IllegalArgumentException("Uma jornada mudou. Gere uma correção do invoice antes de enviar.");
         File file = new File(invoices.folder(), record.getString("filename"));
-        Intent i = InvoiceShare.intent(file, record);
+        if(record.has("timesheetFilename")&&record.optString("signedTimesheetFilename").isEmpty()){new AlertDialog.Builder(this).setTitle(tr("Timesheet sem assinatura"))
+            .setMessage(tr("O timesheet gerado precisa da aprovação do responsável. Anexe a versão assinada ou compartilhe os dois PDFs para revisão."))
+            .setPositiveButton(tr("Anexar assinado"),(d,w)->{try{pickSignedTimesheet(record);}catch(Exception e){message(e.getMessage());}})
+            .setNeutralButton(tr("Compartilhar para revisão"),(d,w)->{try{openInvoiceShare(record,file);}catch(Exception e){message(e.getMessage());}}).setNegativeButton(tr("Voltar"),null).show();return;}
+        openInvoiceShare(record,file);
+    }
+    private void pickSignedTimesheet(JSONObject record)throws Exception{if(!InvoiceStore.active(record)||invoices.needsReview(record)||!record.has("timesheetFilename"))throw new IllegalArgumentException("Revise o invoice antes de anexar o timesheet.");pendingSignedInvoice=record.getString("filename");startActivityForResult(new Intent(Intent.ACTION_OPEN_DOCUMENT).setType("application/pdf").addCategory(Intent.CATEGORY_OPENABLE),22);}
+    private void openInvoiceShare(JSONObject record,File file)throws Exception{
+        Intent i = record.has("timesheetFilename")?InvoiceShare.intent(file,invoices.timesheet(record,true),record):InvoiceShare.intent(file,record);
         startActivity(Intent.createChooser(i, tr("Enviar invoice · revise e envie no aplicativo escolhido")));
     }
     private void validateConfig(JSONObject p) throws Exception {
@@ -382,6 +394,7 @@ public class MainActivity extends Activity {
             } else message("Quando quiser continuar, permita instalações do Menatwork e toque em Instalar atualização.");
             return;
         }
+        if(request==22){String invoice=pendingSignedInvoice;pendingSignedInvoice=null;if(result==RESULT_OK&&data!=null&&data.getData()!=null&&invoice!=null)try(InputStream input=getContentResolver().openInputStream(data.getData())){invoices.attachSigned(invoice,input);callback("invoiceIssued");message("Timesheet anexado. Use Enviar para compartilhar os dois PDFs.");}catch(Exception e){message(e.getMessage());}return;}
         if (request == 21 && result == RESULT_OK && data != null && data.getData() != null && pendingPdf != null) {
             try (FileInputStream in = new FileInputStream(new File(invoices.folder(), pendingPdf));
                  OutputStream out = getContentResolver().openOutputStream(data.getData())) {
@@ -417,7 +430,7 @@ public class MainActivity extends Activity {
     }
     protected void onSaveInstanceState(Bundle state) {
         super.onSaveInstanceState(state);
-        if (pendingPdf != null) state.putString("pendingPdf", pendingPdf);
+        if (pendingPdf != null) state.putString("pendingPdf", pendingPdf);if(pendingSignedInvoice!=null)state.putString("pendingSignedInvoice",pendingSignedInvoice);
     }
     protected void onDestroy() {
         if (web != null) { web.removeJavascriptInterface("Android"); web.destroy(); }

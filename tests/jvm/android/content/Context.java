@@ -1,6 +1,8 @@
 package android.content;
 import java.util.*;
 public class Context {
+ private final String filesToken=java.util.UUID.randomUUID().toString();
+ public java.io.File getFilesDir(){java.io.File f=new java.io.File(System.getProperty("java.io.tmpdir"),"menatwork-pair-tests-"+filesToken);f.mkdirs();return f;}public android.content.res.AssetManager getAssets(){return new android.content.res.AssetManager();}
  public static final int MODE_PRIVATE=0;private final Map<String,SharedPreferences> stores=new HashMap<>();public Object getContentResolver(){return null;}
  public SharedPreferences getSharedPreferences(String name,int mode){return stores.computeIfAbsent(name,k->new Memory());}
  private static final class Memory implements SharedPreferences {

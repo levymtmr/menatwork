@@ -77,7 +77,7 @@ final class Store {
             .atZone(ZoneId.systemDefault()).toLocalDate().toString());
     }
     static String fingerprint(JSONObject record) {
-        JSONObject cfg=record.optJSONObject("config"),totals=record.optJSONObject("totals");String extra=cfg!=null&&cfg.optBoolean("overtime")?"|ot:"+cfg.optDouble("hourly")+":"+(totals==null?0:totals.optDouble("overtimePremium",0))+(isMarken(record)?":marken":""):"";
+        JSONObject cfg=record.optJSONObject("config"),totals=record.optJSONObject("totals");String extra=cfg!=null&&cfg.optBoolean("overtime")?"|ot:"+cfg.optDouble("hourly")+":"+(totals==null?0:totals.optDouble("overtimePremium",0))+(isMarken(record)?":marken:"+record.optString("startTime")+":"+record.optString("endTime")+":"+record.optLong("workStartedAt")+":"+record.optLong("endedAt")+":"+record.optLong("trackedWorkedMs"):""):"";
         return date(record)+"|"+record.optLong("workedMs")+"|"+record.optString("worksite","").trim()+extra;
     }
     JSONObject findJournal(String id) {

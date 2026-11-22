@@ -9,7 +9,7 @@
  function userText(e){e.dataset.userText='';return e;}
  function action(label,fn,cls='secondary'){const b=el('button',label,'button '+cls);b.type='button';b.onclick=fn;return b;}
  function choices(target,selected){target.replaceChildren();for(const s of state.skills||[]){if(s.deleted&&!selected.includes(s.id))continue;const l=el('label',s.name+(s.deleted?' '+window.I18n.t('(removida)'):''),'check-choice'),c=document.createElement('input');c.type='checkbox';c.value=s.id;c.checked=selected.includes(s.id);l.prepend(c);l.dataset.userText='';target.append(l);}if(!target.children.length)target.append(el('p','Crie habilidades na aba Skills.','help'));}
- function close(){if(busy)return;const sheet=$('journalEditor');sheet.classList.add('hidden');document.querySelectorAll('.app > header,.app > main,.app > nav').forEach(e=>e.inert=false);previousFocus?.focus();}
+ function close(saved=false){if(busy)return;if(saved!==true)window.InvoiceUI?.journeyCancelled();const sheet=$('journalEditor');sheet.classList.add('hidden');document.querySelectorAll('.app > header,.app > main,.app > nav').forEach(e=>e.inert=false);previousFocus?.focus();}
  function open(r=null,isActive=false){
   state=window.App.state();record=r;active=isActive;busy=false;requestId=Date.now().toString(36)+'-'+Math.random().toString(36).slice(2);previousFocus=document.activeElement;
   const cfg=r?.config||state.config, now=state.now||Date.now(), clock=t=>new Date(t).toTimeString().slice(0,5);
@@ -46,6 +46,6 @@
  $('j-payRule').onchange=rule;$('j-overtime').onchange=()=>{$('j-payRule').value=$('j-overtime').checked?'clock':'none';rule();};
  $('newJournal').onclick=()=>open();$('closeJournal').onclick=close;$('j-mode').onchange=mode;$('journalForm').oninput=duration;
  $('journalForm').onsubmit=e=>{e.preventDefault();try{const p=payload();busy=true;$('saveJournal').disabled=true;$('journalError').textContent='';window.App.command('saveJournal',p);if(typeof Android==='undefined'){busy=false;$('saveJournal').disabled=false;}}catch(err){window.journalError(err.message);}};
- window.journalSaved=()=>{busy=false;close();window.App.refresh();};window.journalCancelled=()=>{busy=false;$('saveJournal').disabled=false;};window.journalError=message=>{busy=false;$('saveJournal').disabled=false;$('journalError').textContent=message;};
+ window.journalSaved=()=>{busy=false;close(true);window.App.refresh();window.InvoiceUI?.journeySaved();};window.journalCancelled=()=>{busy=false;$('saveJournal').disabled=false;};window.journalError=message=>{busy=false;$('saveJournal').disabled=false;$('journalError').textContent=message;};
  window.JournalUI={render(s){state=s;const clients=(s.history||[]).flatMap(r=>window.Listing.clients(r,s)),types=(s.history||[]).flatMap(r=>window.Listing.types(r,s));window.Listing.options($('history-client'),clients);window.Listing.options($('history-type'),types);for(const [target,values]of [[$('clients'),[...clients,s.invoiceDraft?.profile?.client]],[$('workTypes'),types]]){const key=JSON.stringify(values);if(target.dataset.values!==key){target.dataset.values=key;target.replaceChildren();for(const value of [...new Set(values.filter(Boolean))]){const o=document.createElement('option');o.value=value;target.append(o);}}}renderHistory();},open,close,back(){if($('journalEditor').classList.contains('hidden'))return false;close();return true;}};
 })();

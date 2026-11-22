@@ -53,7 +53,13 @@ public class InvoiceTest {
         boolean headerRejected=false;try{InvoicePdf.generate(18,LocalDate.of(2026,11,16),excessive,items);}catch(IllegalArgumentException e){headerRejected=true;}
         eq(headerRejected,true); // An oversized header must never produce a clipped PDF.
         Files.write(Paths.get("build/qa/invoice-overtime.pdf"),InvoicePdf.generate(20,LocalDate.of(2026,11,16),profile,Arrays.asList(new InvoiceEngine.Item("2026-11-16","Example site","9.25","32","source","64"))));
-        Files.write(Paths.get("build/qa/invoice-marken.pdf"),InvoicePdf.generate(21,LocalDate.of(2026,11,16),profile,Arrays.asList(new InvoiceEngine.Item("2026-11-16","Marken site","9.5","32","marken","32",true,"Marken: ordinary 7.5 h; OT1.5 2 h; OT2 0 h; unpaid meal 30 min"))));
+        InvoiceEngine.Item privateDetails=new InvoiceEngine.Item("2026-11-16","Marken site","9.5","32","marken","32",true,"PRIVATE_TIMESHEET: ordinary 7.5 h; OT1.5 2 h; OT2 0 h; unpaid meal 30 min");
+        byte[] markenPdf=InvoicePdf.generate(21,LocalDate.of(2026,11,16),profile,Arrays.asList(privateDetails));Files.write(Paths.get("build/qa/invoice-marken.pdf"),markenPdf);
+        String clientPdf=new String(markenPdf,StandardCharsets.ISO_8859_1);eq(clientPdf.contains("336.00"),true);eq(clientPdf.contains("Marken site"),true);
+        for(String hidden:new String[]{"PRIVATE_TIMESHEET","ordinary","OT1.5","OT2","unpaid meal","Overtime premium","9.5","7.5 h"})eq(clientPdf.contains(hidden),false);
+        eq(privateDetails.actual.toPlainString(),"9.5");eq(privateDetails.premium.toPlainString(),"32");eq(privateDetails.note.contains("PRIVATE_TIMESHEET"),true);
+        InvoiceEngine.Item clock=new InvoiceEngine.Item("2026-11-16","Example site","9.25","32","source","64");String clockPdf=new String(InvoicePdf.generate(20,LocalDate.of(2026,11,16),profile,Arrays.asList(clock)),StandardCharsets.ISO_8859_1);eq(clockPdf.contains("360.00"),true);eq(clockPdf.contains("Overtime premium"),false);
+
         List<InvoiceEngine.Item> many=new ArrayList<>();
         for(int i=0;i<100;i++)many.add(new InvoiceEngine.Item(LocalDate.of(2026,1,1).plusDays(i).toString(), i==0?"Long location (São Paulo) - "+String.join(" ",Collections.nCopies(80,"Building")):addresses[i%addresses.length],"8:01","32",""));
         Files.write(Paths.get("build/qa/invoice-multipage.pdf"),InvoicePdf.generate(19,LocalDate.of(2026,11,16),profile,many));

@@ -31,7 +31,9 @@ public final class InvoiceEngine {
             try{premium=new BigDecimal(extra);if(premium.signum()<0||premium.compareTo(new BigDecimal("1000000"))>0)throw new NumberFormatException();}catch(Exception e){throw new IllegalArgumentException("Confira o adicional de overtime.");}
             this.amount = billed.multiply(rate(rate)).add(premium).setScale(2, RoundingMode.HALF_UP);
         }
+        private Item(Item original,BigDecimal replacement){date=original.date;address=original.address;sourceId=original.sourceId;note=original.note;actual=original.actual;billed=original.billed;premium=original.premium;dayOff=original.dayOff;if(replacement.signum()<0)throw new IllegalArgumentException("Confira o total do invoice.");amount=replacement.setScale(2,RoundingMode.HALF_UP);}
     }
+    static Item withAmount(Item original,BigDecimal amount){return new Item(original,amount);}
     public static BigDecimal hours(String raw) {
         String s = raw.trim().replace(',', '.');
         if (s.isEmpty()) s = "0";
