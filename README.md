@@ -1,10 +1,10 @@
-# Menatwork 1.10.2
+# Menatwork 1.10.3
 
 Aplicativo Android pessoal, em inglês ou português, para acompanhar o ganho líquido estimado de uma jornada de trabalho. Interface de terminal retrofuturista inspirada no Pip-Boy: fósforo verde, linhas sutis de CRT, painéis monocromáticos e trabalhador animado. Ilustrações originais desenhadas em canvas.
 
 ## Instalar
 
-O instalador fica em `dist/neon-shift-1.10.2.apk`. Veja `INSTALAR.md`.
+O instalador fica em `dist/neon-shift-1.10.3.apk`. Veja `INSTALAR.md`.
 
 Compatível com Android 8.0 ou superior, incluindo o Galaxy S22 Ultra. O APK usa apenas Java e APIs do Android, sem bibliotecas nativas, conta no aplicativo ou servidor de registros. O GitHub hospeda as atualizações públicas. A interface é local em WebView; o GPS, a persistência e o acompanhamento em segundo plano são nativos.
 
@@ -250,3 +250,7 @@ O criador seleciona jornadas salvas de um único cliente, apresenta os valores b
 ### Invoice e contraste Retro (1.10.2)
 
 Alertas usam cores contrastantes em superfícies claras e escuras. Jornadas mostram início e término reais, quando registrados; entradas antigas contendo apenas horas não recebem horários inventados. Cards têm bordas destacadas, gesto para remover do rascunho e opção de desfazer. A área de emissão mantém apenas bruto, erros necessários e ações de PDF.
+
+### Identidade visual (1.10.3)
+
+Nova marca vetorial com capacete e W, aplicada ao ícone adaptativo Android, ícone monocromático, notificações e cabeçalho. Fontes em `design/brand/`.

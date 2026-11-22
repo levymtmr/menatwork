@@ -1,11 +1,8 @@
-Menatwork 1.10.2 — Cards de jornadas e contraste Retro
+Menatwork 1.10.3 — Nova identidade visual
 
-- Alertas e mensagens de erro com contraste reforçado no tema Retro.
-- Início e término da jornada em destaque, incluindo jornadas registradas pelo contador.
-- Cards com bordas mais fortes e fundo destacado.
-- Deslize à esquerda para remover: deslize curto revela a ação; deslize completo remove do invoice, com opção de desfazer.
-- Remover do rascunho preserva o registro no Histórico.
-- Área final simplificada: total bruto, prévias e emissão, sem textos explicativos e resumo de horas.
-- Registros antigos sem início/término são identificados sem inventar horários.
+- Nova marca com capacete de trabalho e W, nas cores laranja e creme do Menatwork.
+- Ícone adaptativo para a tela inicial e gaveta de apps, com versão monocromática para ícones temáticos do Android.
+- Marca aplicada ao cabeçalho nos quatro temas e às notificações.
+- Mantém as jornadas, invoices e configurações existentes.
 
 Instale por cima da versão atual, sem desinstalar.

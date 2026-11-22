@@ -36,6 +36,7 @@ jobs:
           npm install --prefix "$RUNNER_TEMP/menatwork-ui" --no-audit --no-fund playwright@1.57.0
           node "$RUNNER_TEMP/menatwork-ui/node_modules/playwright/cli.js" install chromium --only-shell
           NODE_PATH="$RUNNER_TEMP/menatwork-ui/node_modules" node tests/ui.cjs
+          NODE_PATH="$RUNNER_TEMP/menatwork-ui/node_modules" node tests/brand.cjs
       - name: Compile smoke build with a temporary CI key
         env:
           NEON_SIGNING_KEY: ${{ runner.temp }}/neon-shift-ci.jks

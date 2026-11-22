@@ -94,3 +94,6 @@ nav button{min-height:42px}nav{padding-top:6px;padding-bottom:7px}.client-picker
 :root[data-theme="retro"] .shift-card-content .entry-top{color:#64462e;font-size:12px}
 :root[data-theme="retro"] .shift-card-content .line-total{font-weight:900;border-top:1px solid #bca17c;padding-top:10px}
 @media(prefers-reduced-motion:reduce){.shift-card-content{transition:none}}
+.brand-icon svg.menatwork-mark{width:100%;height:100%;stroke:none;fill:none}.mark-helmet{fill:var(--cyan)}.mark-stripe{fill:var(--bg)}.mark-work{fill:var(--bright)}
+:root[data-theme="retro"] .brand-icon{background:#191411;border-radius:12px;padding:0;width:42px;height:44px;color:#e57b56}
+:root[data-theme="retro"] .brand-icon .mark-helmet{fill:#e57b56}:root[data-theme="retro"] .brand-icon .mark-stripe{fill:#191411}:root[data-theme="retro"] .brand-icon .mark-work{fill:#f5e7c8}
