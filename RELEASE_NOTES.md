@@ -1,11 +1,10 @@
-Menatwork 1.11.0 — Recibos e despesas
+Menatwork 1.11.1 — Recibos com IA e JSON
 
-- Nova aba para notas de materiais, ferramentas, combustível e outras compras.
-- Importa foto ou PDF, guarda o original no celular e reconhece texto offline em inglês e português.
-- Sugere fornecedor, data, itens, descrições, valores, total e imposto; exige revisão antes de salvar.
-- Combustível com litros, preço por litro e porcentagem de uso no trabalho.
-- Organização por cliente, categoria, data e reembolso; edição, remoção e restauração.
-- Totais separados por moeda e pelos custos estimados das jornadas, sem alterar invoices automaticamente.
-- Até 20 MB por arquivo. Para PDFs, leitura automática das primeiras 10 páginas; original completo preservado.
+- Prompt copiável na aba Recibos para usar com a foto em qualquer IA com visão.
+- Cole o JSON da resposta para preencher fornecedor, data, itens, quantidades, preços, total, imposto e combustível.
+- Validação do formato e avisos da IA; revisão obrigatória antes de salvar.
+- Preserva o original anexado, cliente, uso no trabalho e reembolso do rascunho.
+- Dados ilegíveis ficam em branco. O app não inventa valores.
+- Leitura OCR local passa a ser opcional, sem iniciar automaticamente ao anexar.
 
 Instale por cima da versão atual, sem desinstalar.

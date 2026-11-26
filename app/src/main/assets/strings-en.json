@@ -716,5 +716,20 @@
   "Este recibo já está cadastrado.": "This receipt has already been saved.",
   "Não foi possível importar o recibo.": "Could not import the receipt.",
   "REMOVIDO · FORA DOS TOTAIS": "REMOVED · EXCLUDED FROM TOTALS",
-  "Preparando leitura...": "Preparing recognition..."
+  "Preparando leitura...": "Preparing recognition...",
+  "IMPORTAR COM IA / JSON": "IMPORT WITH AI / JSON",
+  "1. Copie o prompt e envie com a foto do recibo para uma IA com visão. 2. Cole o JSON da resposta abaixo. 3. Preencha o formulário e revise antes de salvar.": "1. Copy the prompt and send it with the receipt photo to an AI with vision. 2. Paste its JSON response below. 3. Fill the form and review before saving.",
+  "Prompt para a IA": "AI prompt",
+  "COPIAR PROMPT": "COPY PROMPT",
+  "Prompt copiado.": "Prompt copied.",
+  "Selecione o texto do prompt e copie manualmente.": "Select the prompt text and copy it manually.",
+  "JSON gerado pela IA": "AI-generated JSON",
+  "PREENCHER FORMULÁRIO COM JSON": "FILL FORM FROM JSON",
+  "O JSON preenche o rascunho aberto. O original anexado e suas escolhas de cliente e uso no trabalho são preservados.": "JSON fills the open draft. The attached original and your client and work-use choices are preserved.",
+  "JSON do recibo inválido. Confira o formato e os campos.": "Invalid receipt JSON. Check the format and fields.",
+  "Quantidade": "Quantity",
+  "Unidade": "Unit",
+  "Preço unitário": "Unit price",
+  "Confira quantidade e preço unitário.": "Check quantity and unit price.",
+  "Importe o original e use o prompt de IA para preencher por JSON. A leitura local é opcional.": "Import the original and use the AI prompt to fill from JSON. Local recognition is optional."
 }
