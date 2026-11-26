@@ -1,0 +1,10 @@
+package com.neonshift.app;
+import android.content.*;import android.database.*;import android.net.Uri;import android.os.ParcelFileDescriptor;import android.provider.OpenableColumns;import java.io.*;
+public class ReceiptProvider extends ContentProvider{
+ public boolean onCreate(){return true;}
+ private File file(Uri uri)throws FileNotFoundException{if(!"com.neonshift.app.receipts".equals(uri.getAuthority())||uri.getPathSegments().size()!=1)throw new FileNotFoundException();try{File file=new ReceiptStore(getContext()).attachment(uri.getLastPathSegment());if(!file.isFile())throw new FileNotFoundException();return file;}catch(Exception e){throw new FileNotFoundException();}}
+ public String getType(Uri uri){if(uri.getLastPathSegment()!=null&&uri.getLastPathSegment().endsWith(".pdf"))return "application/pdf";try{android.graphics.BitmapFactory.Options options=new android.graphics.BitmapFactory.Options();options.inJustDecodeBounds=true;android.graphics.BitmapFactory.decodeFile(file(uri).getPath(),options);return options.outMimeType==null?"image/jpeg":options.outMimeType;}catch(Exception e){return "image/jpeg";}}
+ public ParcelFileDescriptor openFile(Uri uri,String mode)throws FileNotFoundException{if(!"r".equals(mode))throw new FileNotFoundException();return ParcelFileDescriptor.open(file(uri),ParcelFileDescriptor.MODE_READ_ONLY);}
+ public Cursor query(Uri uri,String[] projection,String selection,String[] args,String order){try{File f=file(uri);if(projection==null)projection=new String[]{OpenableColumns.DISPLAY_NAME,OpenableColumns.SIZE};MatrixCursor c=new MatrixCursor(projection);Object[] row=new Object[projection.length];for(int n=0;n<row.length;n++)row[n]=OpenableColumns.DISPLAY_NAME.equals(projection[n])?"receipt_"+f.getName():OpenableColumns.SIZE.equals(projection[n])?f.length():null;c.addRow(row);return c;}catch(Exception e){return null;}}
+ public Uri insert(Uri u,ContentValues v){throw new UnsupportedOperationException();}public int update(Uri u,ContentValues v,String s,String[] a){throw new UnsupportedOperationException();}public int delete(Uri u,String s,String[] a){throw new UnsupportedOperationException();}
+}

@@ -1,10 +1,10 @@
-# Menatwork 1.10.6
+# Menatwork 1.11.0
 
 Aplicativo Android pessoal, em inglês ou português, para acompanhar o ganho líquido estimado de uma jornada de trabalho. Interface de terminal retrofuturista inspirada no Pip-Boy: fósforo verde, linhas sutis de CRT, painéis monocromáticos e trabalhador animado. Ilustrações originais desenhadas em canvas.
 
 ## Instalar
 
-O instalador fica em `dist/neon-shift-1.10.6.apk`. Veja `INSTALAR.md`.
+O instalador fica em `dist/neon-shift-1.11.0.apk`. Veja `INSTALAR.md`.
 
 Compatível com Android 8.0 ou superior, incluindo o Galaxy S22 Ultra. O APK usa apenas Java e APIs do Android, sem bibliotecas nativas, conta no aplicativo ou servidor de registros. O GitHub hospeda as atualizações públicas. A interface é local em WebView; o GPS, a persistência e o acompanhamento em segundo plano são nativos.
 
@@ -266,3 +266,9 @@ Prévia e emissão resolvem metadados ausentes do timesheet a partir da jornada 
 ### Serviço Marken e total compacto (1.10.6)
 
 Invoices e timesheets da Marken usam Picking and packing. A descrição geral dos outros clientes é preservada. O total do rascunho mostra Gross total com AUD discreto e valor alinhado, inclusive em telas estreitas.
+
+### Recibos e despesas (1.11.0)
+
+A aba Receipts aceita uma imagem ou PDF por recibo e usa Tesseract.js embarcado para OCR offline em inglês e português. O original é copiado para o armazenamento privado do app. O usuário revisa fornecedor, data, itens, descrições, valores e total antes de salvar. Para combustível há litros, preço por litro e porcentagem de uso profissional. Os registros possuem cliente, categoria, situação de reembolso, edição, lixeira/restauração, filtros e paginação. Os totais são separados por moeda e não entram automaticamente nos shifts ou invoices, evitando duplicar combustível já estimado.
+
+Importação: até 20 MB por arquivo; OCR nas primeiras 10 páginas do PDF (o original completo fica guardado). A leitura pode errar: é obrigatória a revisão antes de salvar. Não há envio de notas a serviços externos. Bibliotecas/modelos e licenças em `app/src/main/assets/ocr/`.

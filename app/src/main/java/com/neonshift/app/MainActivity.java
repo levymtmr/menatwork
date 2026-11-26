@@ -26,6 +26,8 @@ public class MainActivity extends Activity {
     private FrameLayout root;
     private Store store;
     private InvoiceStore invoices;
+    private ReceiptStore receipts;
+    private ReceiptMedia receiptMedia;
     private ClientRegistry clients;
     private AppUpdater updater;
     private String pendingPdf;private String pendingSignedInvoice;
@@ -35,6 +37,7 @@ public class MainActivity extends Activity {
         super.onCreate(b);
         store = new Store(this);
         invoices = new InvoiceStore(this);
+        receipts=new ReceiptStore(this);receiptMedia=new ReceiptMedia(this,receipts);
         clients = new ClientRegistry(this,store,invoices);
         updater = AppUpdater.get(this);
         if (b != null){pendingPdf=b.getString("pendingPdf");pendingSignedInvoice=b.getString("pendingSignedInvoice");}
@@ -79,8 +82,8 @@ public class MainActivity extends Activity {
                     String path = uri.getPath();
                     if (path == null || path.contains("..")) return empty();
                     if (path.equals("/")) path = "/index.html";
-                    String mime = path.endsWith(".css") ? "text/css" : path.endsWith(".js") ? "application/javascript" : path.endsWith(".json") ? "application/json" : path.endsWith(".ttf") ? "font/ttf" : "text/html";
-                    try { return new WebResourceResponse(mime, "UTF-8", getAssets().open(path.substring(1))); }
+                    String mime = path.endsWith(".css") ? "text/css" : path.endsWith(".js") ? "application/javascript" : path.endsWith(".json") ? "application/json" : path.endsWith(".ttf") ? "font/ttf" : path.endsWith(".wasm")?"application/wasm":path.endsWith(".gz")||path.endsWith(".traineddata")?"application/octet-stream":path.endsWith(".svg")?"image/svg+xml":"text/html";
+                    try { return new WebResourceResponse(mime, mime.equals("application/wasm")||mime.equals("application/octet-stream")?null:"UTF-8", getAssets().open(path.substring(1))); }
                     catch (Exception e) { return empty(); }
                 }
                 return empty();
@@ -152,6 +155,7 @@ public class MainActivity extends Activity {
         } else dispatch(next);
     }
     final class Bridge {
+        @JavascriptInterface public String receiptImage(String file,int page){try{return receiptMedia.image(file,page);}catch(Exception e){return "";}}
         @JavascriptInterface public String state() {
             JSONObject j = new JSONObject();
             JSONObject s = store.session();
@@ -165,6 +169,7 @@ public class MainActivity extends Activity {
             Store.put(j, "now", System.currentTimeMillis());
             Store.put(j, "invoiceDraft", invoices.draft());
             Store.put(j, "invoices", invoices.annotatedRecords());
+            try{Store.put(j,"receipts",receipts.summaries());Store.put(j,"receiptDraft",receipts.draft());}catch(Exception e){Store.put(j,"receiptStorageError",e.getMessage());}
             Store.put(j, "nextInvoiceNumber", invoices.nextNumber());
             Store.put(j, "invoiceToday", InvoiceStore.today().toString());
             Store.put(j, "invoiceAddresses", invoices.seed.optJSONArray("addresses"));
@@ -178,7 +183,15 @@ public class MainActivity extends Activity {
             runOnUiThread(() -> {
                 try {
                     JSONObject p = new JSONObject(payload);
-                    if ("saveClient".equals(action)) {
+                    if("importReceipt".equals(action)){
+                        Intent intent=new Intent(Intent.ACTION_OPEN_DOCUMENT);intent.setType("*/*");intent.addCategory(Intent.CATEGORY_OPENABLE);intent.putExtra(Intent.EXTRA_MIME_TYPES,new String[]{"image/*","application/pdf"});startActivityForResult(intent,41);
+                    }else if("saveReceiptDraft".equals(action)){receipts.saveDraft(p);
+                    }else if("saveReceipt".equals(action)){receipts.save(p);callback("receiptSaved");message("Recibo salvo.");
+                    }else if("loadReceipt".equals(action)){JSONObject receipt=receipts.get(p.getString("id"));web.evaluateJavascript("window.receiptLoaded && window.receiptLoaded("+receipt.toString()+")",null);
+                    }else if("removeReceipt".equals(action)||"restoreReceipt".equals(action)){boolean removed="removeReceipt".equals(action);receipts.setDeleted(p.getString("id"),removed);message(removed?"Recibo removido dos totais.":"Recibo restaurado.");
+                    }else if("discardReceiptDraft".equals(action)){confirm("Descartar rascunho?","O recibo ainda não foi salvo na lista.",()->{receipts.clearDraft();callback("receiptDraftDiscarded");});
+                    }else if("viewReceipt".equals(action)||"viewReceiptDraft".equals(action)){JSONObject receipt="viewReceiptDraft".equals(action)?receipts.draft():receipts.get(p.getString("id"));String file=receipt.optString("file");if(file.isEmpty())throw new IllegalArgumentException("Este registro não tem anexo.");Uri receiptUri=Uri.parse("content://com.neonshift.app.receipts/"+file);Intent view=new Intent(Intent.ACTION_VIEW);view.setDataAndType(receiptUri,getContentResolver().getType(receiptUri));view.setClipData(ClipData.newRawUri("Receipt",receiptUri));view.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);startActivity(Intent.createChooser(view,tr("Abrir recibo")));
+                    }else if ("saveClient".equals(action)) {
                         JSONObject saved=clients.save(p);JSONObject cfg=store.config();if(saved.optString("id").equals(cfg.optString("clientId"))){Store.put(cfg,"payRule",ClientRegistry.rule(saved));Store.put(cfg,"overtime",saved.optBoolean("overtime"));Store.put(cfg,"client",saved.getString("client"));if(saved.has("hourly"))Store.put(cfg,"hourly",saved.getDouble("hourly"));store.saveConfig(cfg);}web.evaluateJavascript("window.clientSaved && window.clientSaved("+saved.toString()+")",null);message("Cliente salvo.");
                     } else if ("saveLanguage".equals(action)) {
                         store.saveLanguage(p.getString("language"));
@@ -305,6 +318,7 @@ public class MainActivity extends Activity {
                     }
                 } catch (Exception e) {
                     if("saveClient".equals(action)){String error=tr(e.getMessage());message(error);web.evaluateJavascript("window.clientError && window.clientError("+JSONObject.quote(error)+")",null);}
+                    else if(action.toLowerCase(java.util.Locale.ROOT).contains("receipt")){message(e.getMessage()==null?"Não foi possível salvar o recibo.":e.getMessage());web.evaluateJavascript("window.receiptError && window.receiptError("+JSONObject.quote(tr(e.getMessage()==null?"Não foi possível salvar o recibo.":e.getMessage()))+")",null);}
                     else invoiceError(e);
                 }
             });
@@ -388,6 +402,7 @@ public class MainActivity extends Activity {
     }
     protected void onActivityResult(int request, int result, Intent data) {
         super.onActivityResult(request, result, data);
+        if(request==41){if(result!=RESULT_OK||data==null||data.getData()==null){callback("receiptImportCancelled");return;}Uri uri=data.getData();new Thread(()->{try{JSONObject draft=receiptMedia.importFile(uri);if(draft.has("duplicateId")){JSONObject existing=receipts.get(draft.getString("duplicateId"));runOnUiThread(()->{web.evaluateJavascript("window.receiptLoaded && window.receiptLoaded("+existing.toString()+")",null);message("Este recibo já está cadastrado.");});}else runOnUiThread(()->web.evaluateJavascript("window.receiptImported && window.receiptImported("+draft.toString()+")",null));}catch(Exception e){runOnUiThread(()->{message(e.getMessage()==null?"Não foi possível importar o recibo.":e.getMessage());web.evaluateJavascript("window.receiptError && window.receiptError("+JSONObject.quote(e.getMessage()==null?"Não foi possível importar o recibo.":e.getMessage())+")",null);});}},"receipt-import").start();return;}
         if (request == 30) {
             if (getPackageManager().canRequestPackageInstalls()) {
                 try { installUpdate(); } catch (Exception e) { message("Não foi possível abrir o instalador. Toque em Instalar atualização para tentar novamente."); }

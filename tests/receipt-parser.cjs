@@ -1,0 +1,7 @@
+const assert=require('node:assert/strict');const {parse,money}=require('../app/src/main/assets/receipt-parser.js');
+let r=parse('BUNNINGS WAREHOUSE\nTAX INVOICE\n26/11/2026\nGLOVES 12.50\nDRILL BIT 2 x 3.75 7.50\nTOTAL AUD 20.00\nGST INCLUDED 1.82\nVISA 20.00\nCHANGE 0.00');assert.equal(r.merchant,'BUNNINGS WAREHOUSE');assert.equal(r.date,'2026-11-26');assert.equal(r.total,'20.00');assert.equal(r.tax,'1.82');assert.equal(r.items.length,2);assert.equal(r.items[1].name,'DRILL BIT');assert.equal(r.items[1].amount,'7.50');
+r=parse('POSTO EXEMPLO\nNOTA FISCAL\n26/11/26\nGASOLINA 30,00 L @ 1,899 56,97\nVALOR TOTAL R$ 56,97');assert.equal(r.category,'fuel');assert.equal(r.litres,'30.00');assert.equal(r.unitPrice,'1.899');assert.equal(r.currency,'BRL');assert.equal(r.total,'56.97');
+assert.equal(money('1.234,56'),'1234.56');assert.equal(money('1,234.56'),'1234.56');assert.equal(parse('SHOP\nTOTAL AUD 1,234.56').total,'1234.56');
+assert.equal(parse('SHOP\n31/02/2026\nTOTAL 10.00').date,'');assert.equal(parse('SHOP\nVISA 50.00\nCHANGE 0.00').total,'');assert.equal(parse('STORE\nSUBTOTAL 10.00\nTOTAL 11.00').total,'11.00');
+assert.equal(parse('SHOP\nTOTAL (incl GST) 20.00\nTOTAL GST 1.82').total,'20.00');assert.equal(parse('SHOP\nTOTAL (incl GST) 20.00\nTOTAL GST 1.82').tax,'1.82');
+console.log('PASS: receipt item columns, GST, payment exclusion, fuel litres/price, Portuguese amounts, grouping separators and date validation.');

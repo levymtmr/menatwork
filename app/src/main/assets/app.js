@@ -28,7 +28,7 @@
     document.querySelector('main').scrollTo({top:0,behavior:'instant'});
     refresh();
   }
-  window.goHome=()=>{if(window.ClientsUI?.back())return true;if(window.JournalUI?.back())return true;if(currentPage==='today')return false;switchPage('today');return true;};
+  window.goHome=()=>{if(currentPage==='receipts'&&window.ReceiptsUI?.back())return true;if(window.ClientsUI?.back())return true;if(window.JournalUI?.back())return true;if(currentPage==='today')return false;switchPage('today');return true;};
   document.querySelectorAll('nav button').forEach(el=>el.addEventListener('click',()=>switchPage(el.dataset.page)));
   function button(text,action,cls='primary') {const b=safeText('button',text,'button '+cls);b.type='button';b.onclick=()=>command(action);return b;}
   let actionsPhase='';
@@ -104,6 +104,7 @@
     renderWorkClients();if(!settingsDirty)fillSettings();
     window.ClientsUI.render(state);window.WorksitesUI.render(state);window.JournalUI.render(state);window.SkillsUI.render(state);
     if(window.InvoiceUI)window.InvoiceUI.render(state);
+    if(window.ReceiptsUI)window.ReceiptsUI.render(state);
     if(window.AppUpdateUI)window.AppUpdateUI.render(state.update);
   }
   $('editCosts').onclick=()=>{editorOpen=!editorOpen;$('costEditor').classList.toggle('hidden',!editorOpen);if(editorOpen){$('manualHours').disabled=state.session.config?.payRule==='marken';$('manualClient').value=state.session.client||'';$('manualWorkType').value=state.session.workType||'';$('manualWorksite').value=state.session.worksite||'';$('manualKm').value=String(Math.round((state.session.km||0)*1000)/1000).replace('.',',');$('manualExtras').value=String(state.session.extras||0).replace('.',',');$('manualHours').value=String(Math.round((state.trackedWorkedMs??state.totals.workedMs)/3600000*10000)/10000).replace('.',',');}};
