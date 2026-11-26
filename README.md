@@ -267,8 +267,8 @@ Prévia e emissão resolvem metadados ausentes do timesheet a partir da jornada 
 
 Invoices e timesheets da Marken usam Picking and packing. A descrição geral dos outros clientes é preservada. O total do rascunho mostra Gross total com AUD discreto e valor alinhado, inclusive em telas estreitas.
 
-### Recibos e despesas (1.11.0)
+### Compras e recibos (1.11.2)
 
-A aba Receipts aceita uma imagem ou PDF por recibo e usa Tesseract.js embarcado para OCR offline em inglês e português. O original é copiado para o armazenamento privado do app. O usuário revisa fornecedor, data, itens, descrições, valores e total antes de salvar. Para combustível há litros, preço por litro e porcentagem de uso profissional. Os registros possuem cliente, categoria, situação de reembolso, edição, lixeira/restauração, filtros e paginação. Os totais são separados por moeda e não entram automaticamente nos shifts ou invoices, evitando duplicar combustível já estimado.
+A aba Receipts tem um único fluxo manual: Nova compra → anexar foto → informar data, loja, categoria e itens (nome + valor) → salvar. A soma dos itens forma o total da compra. Lojas e categorias personalizadas ficam guardadas para reutilizar, inclusive após editar ou remover compras. O card mostra os itens e um botão Ver foto, que abre o original privado usando uma permissão temporária de leitura. A lista mostra quantidade de itens e soma por moeda; filtros e busca recalculam esses totais. Compras removidas ficam fora da soma e podem ser restauradas.
 
-Importação: até 20 MB por arquivo; OCR nas primeiras 10 páginas do PDF (o original completo fica guardado). A leitura pode errar: é obrigatória a revisão antes de salvar. Não há envio de notas a serviços externos. Bibliotecas/modelos e licenças em `app/src/main/assets/ocr/`.
+Os registros anteriores permanecem guardados; seus metadados e anexos são preservados. Não há leitura automática nem prompt/JSON na interface. Imagens e PDFs originais de até 20 MB continuam suportados. Recibos permanecem separados das jornadas e invoices. `scripts/test-receipts.sh` cobre persistência, categorias, locais e validação; `tests/ui.cjs` cobre o fluxo manual completo.

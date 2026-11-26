@@ -169,7 +169,7 @@ public class MainActivity extends Activity {
             Store.put(j, "now", System.currentTimeMillis());
             Store.put(j, "invoiceDraft", invoices.draft());
             Store.put(j, "invoices", invoices.annotatedRecords());
-            try{Store.put(j,"receipts",receipts.summaries());Store.put(j,"receiptDraft",receipts.draft());}catch(Exception e){Store.put(j,"receiptStorageError",e.getMessage());}
+            try{Store.put(j,"receipts",receipts.summaries());Store.put(j,"receiptDraft",receipts.draft());Store.put(j,"receiptChoices",receipts.choices());}catch(Exception e){Store.put(j,"receiptStorageError",e.getMessage());}
             Store.put(j, "nextInvoiceNumber", invoices.nextNumber());
             Store.put(j, "invoiceToday", InvoiceStore.today().toString());
             Store.put(j, "invoiceAddresses", invoices.seed.optJSONArray("addresses"));

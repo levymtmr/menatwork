@@ -731,5 +731,22 @@
   "Unidade": "Unit",
   "Preço unitário": "Unit price",
   "Confira quantidade e preço unitário.": "Check quantity and unit price.",
-  "Importe o original e use o prompt de IA para preencher por JSON. A leitura local é opcional.": "Import the original and use the AI prompt to fill from JSON. Local recognition is optional."
+  "Importe o original e use o prompt de IA para preencher por JSON. A leitura local é opcional.": "Import the original and use the AI prompt to fill from JSON. Local recognition is optional.",
+  "＋ NOVA COMPRA": "+ NEW PURCHASE",
+  "COMPRA": "PURCHASE",
+  "ADICIONAR FOTO": "ADD PHOTO",
+  "VER FOTO": "VIEW PHOTO",
+  "Local da compra": "Purchase location",
+  "Nome da loja": "Shop name",
+  "Nome da categoria": "Category name",
+  "＋ ADICIONAR ITEM": "+ ADD ITEM",
+  "SALVAR COMPRA": "SAVE PURCHASE",
+  "Buscar compra": "Search purchases",
+  "＋ NOVO LOCAL": "+ NEW LOCATION",
+  "＋ NOVA CATEGORIA": "+ NEW CATEGORY",
+  "Itens salvos": "Saved items",
+  "Foto anexada": "Photo attached",
+  "Adicione pelo menos um item.": "Add at least one item.",
+  "Confira nome, valor, local e categoria.": "Check item name, amount, location and category.",
+  "Total": "Total"
 }
