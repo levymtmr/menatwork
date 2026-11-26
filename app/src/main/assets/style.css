@@ -97,3 +97,4 @@ nav button{min-height:42px}nav{padding-top:6px;padding-bottom:7px}.client-picker
 .brand-icon svg.menatwork-mark{width:100%;height:100%;stroke:none;fill:none}.mark-helmet{fill:var(--cyan)}.mark-stripe{fill:var(--bg)}.mark-work{fill:var(--bright)}
 :root[data-theme="retro"] .brand-icon{background:#191411;border-radius:12px;padding:0;width:42px;height:44px;color:#e57b56}
 :root[data-theme="retro"] .brand-icon .mark-helmet{fill:#e57b56}:root[data-theme="retro"] .brand-icon .mark-stripe{fill:#191411}:root[data-theme="retro"] .brand-icon .mark-work{fill:#f5e7c8}
+.record-clock{font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.5;margin:8px 0;color:var(--bright)}.foldable-panel.is-folded .record-clock{font-size:16px;margin:5px 0}

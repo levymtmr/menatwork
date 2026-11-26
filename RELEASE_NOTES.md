@@ -1,8 +1,9 @@
-Menatwork 1.10.3 — Nova identidade visual
+Menatwork 1.10.4 — Horários das jornadas e notificação bruta
 
-- Nova marca com capacete de trabalho e W, nas cores laranja e creme do Menatwork.
-- Ícone adaptativo para a tela inicial e gaveta de apps, com versão monocromática para ícones temáticos do Android.
-- Marca aplicada ao cabeçalho nos quatro temas e às notificações.
-- Mantém as jornadas, invoices e configurações existentes.
+- Cards do Histórico mostram início e término da jornada, inclusive quando recolhidos.
+- Horários consistentes no Histórico e no invoice, respeitando o fuso registrado e jornadas que terminam no dia seguinte.
+- Jornada com trajeto de volta mostra o fim do trabalho, sem incluir o deslocamento no horário de saída.
+- Notificação agora mostra o valor bruto acumulado (gross), em vez do líquido.
+- Registros antigos que só possuem horas totais indicam que início e término não foram registrados.
 
 Instale por cima da versão atual, sem desinstalar.

@@ -36,7 +36,7 @@ public class ShiftService extends Service implements LocationListener {
         store = new Store(this);
         gps = (LocationManager)getSystemService(LOCATION_SERVICE);
         NotificationChannel channel = new NotificationChannel(CHANNEL, Language.text(this,"Jornada e trajeto"), NotificationManager.IMPORTANCE_LOW);
-        channel.setDescription("Tempo, ganho líquido estimado e registro do trajeto iniciado por você.");
+        channel.setDescription(Language.text(this,"Tempo, ganho bruto e registro do trajeto iniciado por você."));
         ((NotificationManager)getSystemService(NOTIFICATION_SERVICE)).createNotificationChannel(channel);
     }
     private Notification notification(JSONObject s) {
@@ -46,8 +46,8 @@ public class ShiftService extends Service implements LocationListener {
         String phase = s.optString("phase");
         String title = travelling(s) ? "Menatwork · registrando trajeto" : "pause".equals(phase) ? "Menatwork · pausa" : "Menatwork · trabalhando";
         long mins = t.optLong("workedMs") / 60000;
-        String text = String.format("pt".equals(store.language())?new Locale("pt", "BR"):Locale.US, "%s $ %.2f líquidos · %02dh %02dmin · %.1f km", currency,
-            t.optDouble("net"), mins / 60, mins % 60, s.optDouble("km", 0));
+        String text = String.format("pt".equals(store.language())?new Locale("pt", "BR"):Locale.US, "%s $ %.2f brutos · %02dh %02dmin · %.1f km", currency,
+            t.optDouble("gross"), mins / 60, mins % 60, s.optDouble("km", 0));
         PendingIntent open = PendingIntent.getActivity(this, 0, new Intent(this, MainActivity.class), PendingIntent.FLAG_IMMUTABLE | PendingIntent.FLAG_UPDATE_CURRENT);
         Notification.Builder b = new Notification.Builder(this, CHANNEL)
             .setSmallIcon(com.neonshift.app.R.drawable.ic_notification).setContentTitle(Language.text(this,title)).setContentText(Language.text(this,text))

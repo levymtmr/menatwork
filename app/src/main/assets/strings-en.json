@@ -622,5 +622,7 @@
   "Início e término não registrados": "Start and finish not recorded",
   "Jornada. Deslize para a esquerda para remover.": "Shift. Swipe left to remove.",
   "Jornada removida do invoice.": "Shift removed from invoice.",
-  "DESFAZER": "UNDO"
+  "DESFAZER": "UNDO",
+  "brutos": "gross",
+  "Tempo, ganho bruto e registro do trajeto iniciado por você.": "Time, gross earnings and your started commute tracking."
 }

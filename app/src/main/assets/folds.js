@@ -2,7 +2,7 @@
 (() => {
  const state=new Map(),openers=new WeakMap();
  function enhance(panel,id,compact=false,record=false){if(panel.dataset.foldBound)return;panel.dataset.foldBound='1';panel.classList.add('foldable-panel');const children=[...panel.children],body=document.createElement('div');body.className='fold-body';body.id='fold-'+id.replace(/[^a-zA-Z0-9_-]/g,'-');
-  for(const child of children){const keep=record&&child.matches('.history-top,h3,.history-gross,.record-date,.billing-badge,.record-client,.skill-level,.balance-top,.balance-body,.corner-detail');if(!keep)body.append(child);}
+  for(const child of children){const keep=record&&child.matches('.history-top,h3,.history-gross,.record-date,.record-clock,.billing-badge,.record-client,.skill-level,.balance-top,.balance-body,.corner-detail');if(!keep)body.append(child);}
   // Keep the title of regular panels visible while moving only their controls.
   if(!record){const title=body.querySelector(':scope > h3,:scope > .panel-title,:scope > label[for]');if(title)panel.append(title);}
   const button=document.createElement('button');button.type='button';button.className='fold-toggle';button.setAttribute('aria-controls',body.id);panel.append(button,body);

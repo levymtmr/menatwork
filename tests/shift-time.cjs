@@ -1,0 +1,12 @@
+const assert=require('node:assert/strict');const {format}=require('../app/src/main/assets/shift-time.js');
+assert.equal(format({entryMode:'times',startTime:'07:00',endTime:'15:00'}),'07:00 – 15:00');
+assert.equal(format({entryMode:'times',startTime:'22:30',endTime:'06:00',nextDay:true}),'22:30 – 06:00 (+1)');
+const start=Date.parse('2026-11-25T07:00:00+10:30'),finish=Date.parse('2026-11-25T15:00:00+10:30');
+assert.equal(format({workStartedAt:start,endedAt:finish,workZone:'Australia/Adelaide'}),'07:00 – 15:00');
+assert.equal(format({workStartedAt:start-3600000,endedAt:finish+3600000,workIntervals:[[start,start+4*3600000],[start+4.5*3600000,finish]],workZone:'Australia/Adelaide'}),'07:00 – 15:00');
+assert.equal(format({entryMode:'hours',workedMs:8*3600000,startedAt:start,endedAt:finish}),'');
+assert.equal(format({startedAt:start,workedMs:8*3600000}), '');
+assert.equal(format({timesheetEntry:{start:'07:00',end:'15:00'}}),'07:00 – 15:00');
+assert.equal(format({workStartedAt:Date.parse('2026-10-04T01:30:00+09:30'),endedAt:Date.parse('2026-10-04T04:00:00+10:30'),workZone:'Australia/Adelaide'}),'01:30 – 04:00');
+assert.equal(format({workStartedAt:finish,endedAt:start}), '');
+console.log('PASS: shift start/finish, overnight, recorded timezone, DST, return commute excluded and unknown legacy hours.');
