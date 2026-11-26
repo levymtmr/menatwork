@@ -1,9 +1,7 @@
-Menatwork 1.10.5 — Correção dos horários no invoice Marken
+Menatwork 1.10.6 — Picking and packing e total compacto
 
-- Prévia e emissão buscam automaticamente início e término na jornada vinculada quando faltam metadados no rascunho.
-- Jornadas antigas da Marken também transferem os horários, mesmo salvas com tarifa normal ou regra anterior de overtime.
-- Preserva regra de pagamento, valores e jornadas salvos no Histórico.
-- Mantém invoice e timesheet em PDFs separados, em inglês.
-- Jornadas que só possuem horas totais continuam exigindo início e término reais no Histórico.
+- Serviço da Marken corrigido para Picking and packing services no invoice e Picking and packing no timesheet.
+- Preserva as descrições dos outros clientes e os valores das jornadas.
+- Total bruto do rascunho mais compacto, com AUD discreto e valor alinhado, sem estourar a largura da tela.
 
 Instale por cima da versão atual, sem desinstalar.

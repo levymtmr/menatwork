@@ -1,10 +1,10 @@
-# Menatwork 1.10.5
+# Menatwork 1.10.6
 
 Aplicativo Android pessoal, em inglês ou português, para acompanhar o ganho líquido estimado de uma jornada de trabalho. Interface de terminal retrofuturista inspirada no Pip-Boy: fósforo verde, linhas sutis de CRT, painéis monocromáticos e trabalhador animado. Ilustrações originais desenhadas em canvas.
 
 ## Instalar
 
-O instalador fica em `dist/neon-shift-1.10.5.apk`. Veja `INSTALAR.md`.
+O instalador fica em `dist/neon-shift-1.10.6.apk`. Veja `INSTALAR.md`.
 
 Compatível com Android 8.0 ou superior, incluindo o Galaxy S22 Ultra. O APK usa apenas Java e APIs do Android, sem bibliotecas nativas, conta no aplicativo ou servidor de registros. O GitHub hospeda as atualizações públicas. A interface é local em WebView; o GPS, a persistência e o acompanhamento em segundo plano são nativos.
 
@@ -262,3 +262,7 @@ Cards do Histórico mostram início e término, mesmo recolhidos. A apresentaç�
 ### Vínculos de horários da Marken (1.10.5)
 
 Prévia e emissão resolvem metadados ausentes do timesheet a partir da jornada vinculada no Histórico. Jornadas antigas do cliente Marken com tarifa normal ou overtime por horário também fornecem seus horários e faixas salvas, sem alterar a regra de pagamento. Registros que só contêm horas totais continuam exigindo horários reais no Histórico.
+
+### Serviço Marken e total compacto (1.10.6)
+
+Invoices e timesheets da Marken usam Picking and packing. A descrição geral dos outros clientes é preservada. O total do rascunho mostra Gross total com AUD discreto e valor alinhado, inclusive em telas estreitas.

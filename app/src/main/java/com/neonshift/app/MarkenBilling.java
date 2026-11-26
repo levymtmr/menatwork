@@ -2,6 +2,7 @@ package com.neonshift.app;
 import java.math.*;import java.time.*;import java.util.*;
 /** Sum recorded durations by base rate and band before rounding currency, as in the supplied timesheet. */
 public final class MarkenBilling {
+ public static final String SERVICE="Picking and packing services", POSITION="Picking and packing";
  public static final class Entry {
   public final String date,start,end,site,position,company;public final long breakMs,regularMs,ot15Ms,ot2Ms;public final BigDecimal rate;
   public Entry(String date,String start,String end,String site,String position,String company,long breakMs,long regular,long ot15,long ot2,String rate){

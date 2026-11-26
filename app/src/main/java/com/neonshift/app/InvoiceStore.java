@@ -62,10 +62,10 @@ final class InvoiceStore {
     }
     static LocalDate today() { return LocalDate.now(ZoneId.of("Australia/Adelaide")); }
     static Map<String, String> profile(JSONObject draft) throws Exception {
-        JSONObject p = draft.getJSONObject("profile");
+        JSONObject p = draft.getJSONObject("profile");boolean marken=paired(draft);
         Map<String, String> out = new HashMap<>();
         for (String key : new String[]{"name", "address", "email", "abn", "bank", "bsb", "account", "account_name", "client", "client_abn", "client_address", "client_email", "description", "timesheet_position", "timesheet_company", "timesheet_location"}) {
-            String value = p.optString(key).trim();
+            String value = marken&&key.equals("description")?MarkenBilling.SERVICE:marken&&key.equals("timesheet_position")?MarkenBilling.POSITION:p.optString(key).trim();
             int limit = key.contains("address") ? 350 : key.equals("description") ? 500 :
                 key.contains("email") ? 160 : key.contains("abn") || key.equals("bsb") ? 40 : key.equals("account") ? 80 : 120;
             if (value.length() > limit)

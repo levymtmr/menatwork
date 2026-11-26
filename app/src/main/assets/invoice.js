@@ -1,7 +1,7 @@
 'use strict';
 (() => {
   const $=id=>document.getElementById(id), native=typeof Android!=='undefined';
-  let removedRow=null;
+  let removedRow=null,genericDescription=null,genericPosition=null;
   let state,initialized=false,saveTimer,recordsSignature='',editing=false,limit=20,trashLimit=20,fieldCounter=0,pickerLimit=30,pickerSignature='',saveRevision=0;
   const filters=window.Listing.controls('invoices',()=>{limit=20;trashLimit=20;recordsSignature='';if(state)records();});
   const fields={
@@ -35,12 +35,19 @@
   for(const [key,label]of Object.entries(fields)){const target=key==='client'||key==='client_email'?'clientIdentity':key==='description'?'serviceFields':key.startsWith('timesheet_')?'timesheetFields':key.startsWith('client')?'clientFields':'sellerFields';const el=input(label,key,'',$(target),key.includes('address')||key==='description'?'textarea':key.includes('email')?'email':'text');if(key.startsWith('client'))el.readOnly=true;}
   function readDraft(){
     const profile={};for(const key of Object.keys(fields))profile[key]=document.querySelector(`[name="${key}"]`).value.trim();
+    if(genericDescription!==null){profile._generalDescription=genericDescription;profile._generalPosition=genericPosition;}
     const rows=[...$('invoiceRows').children].map(el=>JSON.parse(el.dataset.row));
     return {number:Number($('invoiceNumber').value),rate:$('invoiceRate').value.trim().replace(',','.'),profile,rows,aggregationOnly:true};
   }
   function markenCents(rows){const groups=new Map(),gcd=(a,b)=>b?gcd(b,a%b):a;for(const row of rows){if(!row.timesheet)throw Error('Para Marken, vincule jornadas com início e término para gerar os dois PDFs.');const e=row.timesheet,r=decimal(e.rate),div=gcd(r.n,r.d),key=(r.n/div)+'/'+(r.d/div);let g=groups.get(key);if(!g){g={r,ms:[0n,0n,0n]};groups.set(key,g);}for(const [i,k]of ['regularMs','ot15Ms','ot2Ms'].entries())g.ms[i]+=BigInt(e[k]);}let total=0n;for(const g of groups.values())for(let i=0;i<3;i++){const n=g.ms[i]*g.r.n*BigInt([2,3,4][i])*100n,d=3600000n*g.r.d*2n;total+=(n*2n+d)/(d*2n);}return Number(total);}
+  function syncService(){
+    const description=document.querySelector('[name="description"]'),position=document.querySelector('[name="timesheet_position"]'),marken=/\bmarken\b/i.test(document.querySelector('#invoices [name="client"]').value)||[...$('invoiceRows').children].some(e=>JSON.parse(e.dataset.row).timesheet);
+    if(marken){if(genericDescription===null){genericDescription=description.value;genericPosition=position.value;}description.value='Picking and packing services';position.value='Picking and packing';}
+    else if(genericDescription!==null){description.value=genericDescription;position.value=genericPosition;genericDescription=null;genericPosition=null;}
+    description.readOnly=position.readOnly=marken;
+  }
   function updateTotals(){
-    const draft=readDraft();let actual=0,quarters=0,cents=0,invalid=false;
+    syncService();const draft=readDraft();let actual=0,quarters=0,cents=0,invalid=false;
     draft.rows.forEach((r,i)=>{const target=$('invoiceRows').children[i].querySelector('.line-total');try{const l=line(r,draft.rate);actual+=l.actual;quarters+=l.quarters;cents+=l.cents;target.textContent=cash(l.cents);}catch(e){target.textContent=e.message;invalid=true;}});
     const pair=draft.rows.some(r=>r.timesheet)||/\bmarken\b/i.test(draft.profile.client);$('timesheetPreview').classList.toggle('hidden',!pair);$('invoiceRowCount').textContent=draft.rows.length+' itens';$('invoiceEmpty').classList.toggle('hidden',draft.rows.length>0);renderPicker();$('invoiceIssue').textContent=pair?'EMITIR INVOICE + TIMESHEET':'EMITIR E GUARDAR PDF';if(pair)try{cents=markenCents(draft.rows);}catch(e){invalid=true;error(e.message);}
     $('invoiceTotal').textContent=invalid?'Confira as linhas':cash(cents);
@@ -68,7 +75,7 @@
     const remove=text('button','REMOVER','swipe-remove remove-entry');remove.type='button';remove.setAttribute('aria-label','Remover lançamento');remove.onclick=()=>removeRow(box);
     const content=text('div','','shift-card-content');content.tabIndex=0;content.setAttribute('aria-label','Jornada. Deslize para a esquerda para remover.');
     const top=text('div','','entry-top');top.append(userText(text('strong',row.date||'')),text('span','‹','swipe-cue'));content.append(top);
-    content.append(userText(text('p',row.shiftTime||window.I18n.t('Início e término não registrados'),'shift-clock')),userText(text('p',row.address||'','record-site')),userText(text('p',row.workType||'','muted')),text('p','','line-total'));
+    content.append(userText(text('p',row.shiftTime||window.I18n.t('Início e término não registrados'),'shift-clock')),userText(text('p',row.address||'','record-site')),userText(text('p',row.timesheet?'Picking and packing':row.workType||'','muted')),text('p','','line-total'));
     if(!row.sourceId)content.append(text('p','Item antigo sem jornada vinculada. Remova e selecione uma jornada do Histórico.','notice'));
     box.append(remove,content);swipeRow(box,content,remove);$('invoiceRows').append(box);if(persist)changed();return box;
   }
@@ -78,7 +85,7 @@
     $('invoiceNumber').value=draft.number||state.nextInvoiceNumber||18;$('invoiceRate').value=(window.I18n.language()==='pt'?String(draft.rate||'32').replace('.',','):String(draft.rate||'32'));
     for(const key of Object.keys(fields))document.querySelector(`[name="${key}"]`).value=draft.profile&&draft.profile[key]||'';
     $('invoiceRows').replaceChildren();for(const r of draft.rows||[])addRow(r,false);
-    initialized=true;editing=false;$('invoiceSaveState').textContent='RASCUNHO LOCAL';updateTotals();
+    genericDescription=draft.profile?._generalDescription??null;genericPosition=draft.profile?._generalPosition??null;initialized=true;editing=false;$('invoiceSaveState').textContent='RASCUNHO LOCAL';updateTotals();
   }
   function validDraft(){
     const d=readDraft();if(!/^[1-9]\d{0,8}$/.test($('invoiceNumber').value.trim()))throw Error('Confira o número do invoice.');
