@@ -160,7 +160,7 @@ public class MainActivity extends Activity {
             Store.put(j, "session", s);Store.put(j,"trackedWorkedMs",Store.elapsed(s));
             Store.put(j, "config", store.config());
             Store.put(j, "totals", Store.totals(s, store.config()));
-            JSONArray history=store.annotatedHistory();for(int n=0;n<history.length();n++){JSONObject row=history.optJSONObject(n);if(row!=null&&Store.isMarken(row))try{Store.put(row,"timesheetEntry",TimesheetData.fromSource(row));}catch(Exception e){Store.put(row,"timesheetError",e.getMessage());}}Store.put(j,"history",history);
+            JSONArray history=store.annotatedHistory();for(int n=0;n<history.length();n++){JSONObject row=history.optJSONObject(n);if(row!=null&&TimesheetData.supports(row))try{Store.put(row,"timesheetEntry",TimesheetData.fromSource(row));}catch(Exception e){Store.put(row,"timesheetError",e.getMessage());}}Store.put(j,"history",history);
             Store.put(j, "serviceRunning", ShiftService.running);
             Store.put(j, "now", System.currentTimeMillis());
             Store.put(j, "invoiceDraft", invoices.draft());
